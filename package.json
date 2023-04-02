@@ -27,7 +27,7 @@
         "postinstall": "npx cmake-js compile -C --CDCMAKE_EXPORT_COMPILE_COMMANDS=1"
     },
     "name": "libopusenc",
-    "version": "0.0.5",
+    "version": "0.0.6",
     "devDependencies": {
         "@types/node": "18.x",
         "codestreamjs": "^0.0.1",
