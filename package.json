@@ -5,8 +5,11 @@
         "prettier": "^2.8.7"
     },
     "scripts": {
+        "prepublishOnly": "npx ts-node scripts/generate-constants.ts && yarn test",
         "postinstall": "npx cmake-js compile -C --CDCMAKE_EXPORT_COMPILE_COMMANDS=1"
     },
+    "name": "node-opusenc",
+    "version": "0.0.1",
     "devDependencies": {
         "@types/node": "18.x",
         "codestreamjs": "^0.0.1",
