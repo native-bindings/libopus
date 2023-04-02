@@ -1,5 +1,4 @@
 project(opusenc C)
-cmake_minimum_required(VERSION 3.24)
 
 set(SRC_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
