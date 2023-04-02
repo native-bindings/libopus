@@ -20,4 +20,4 @@ target_compile_definitions(
     OUTSIDE_SPEEX RANDOM_PREFIX=NodeOpusEnc
 )
 
-configure_file(${SRC_FOLDER}/include/config.h.in ${SRC_FOLDER}/include/config.h)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${SRC_FOLDER}/include/config.h)
