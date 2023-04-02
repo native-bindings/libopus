@@ -24,6 +24,7 @@ void Encoder::Init(v8::Local<v8::Object> exports) {
     Nan::SetPrototypeMethod(tpl,"drain",Drain);
     Nan::SetPrototypeMethod(tpl,"getPage",GetPage);
     Nan::SetPrototypeMethod(tpl,"write",Write);
+    Nan::SetPrototypeMethod(tpl,"flushHeader",FlushHeader);
     Nan::SetPrototypeMethod(tpl,"chainCurrent",ChainCurrent);
     Nan::SetPrototypeMethod(tpl,"writeFloat",WriteFloat);
     Nan::SetPrototypeMethod(tpl,"continueNewFile",ContinueNewFile);
@@ -123,6 +124,14 @@ NAN_METHOD(Encoder::ChainCurrent){
     }
     if(ope_encoder_chain_current(enc->value,comments->value) != OPE_OK){
         Nan::ThrowError("Failed to chain current");
+    }
+}
+
+NAN_METHOD(Encoder::FlushHeader) {
+    auto* enc = Arguments::Unwrap<Encoder>(info.This());
+    enc->error = ope_encoder_flush_header(enc->value);
+    if(enc->error != OPE_OK){
+        Nan::ThrowError(Nan::New("Failed to flush header with error: " + std::string(ope_strerror(enc->error))).ToLocalChecked());
     }
 }
 

@@ -16,6 +16,7 @@ public:
 private:
     explicit Encoder();
     static NAN_METHOD(CreateFile);
+    static NAN_METHOD(FlushHeader);
     static NAN_METHOD(Drain);
     static NAN_METHOD(WriteFloat);
     static NAN_METHOD(GetPage);

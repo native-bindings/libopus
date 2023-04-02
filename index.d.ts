@@ -7,11 +7,18 @@ export class Encoder {
         channels: number,
         family: number
     ): void;
+    // Write out the header now rather than wait for audio to begin.
+    flushHeader(): void;
+    /**
+     * Create a new OggOpus stream to be used along with.ope_encoder_get_page().
+     * This is mostly useful for muxing with other streams.
+     */
     createPull(rate: number, channels: number, family: number): void;
     // Add/encode any number of float samples to the file.
     writeFloat(value: Float32Array, samples: number): void;
     // Add/encode any number of int16 samples to the file.
     write(value: Int16Array, samples: number): void;
+    // Finalizes the stream, but does not deallocate the object.
     drain(): void;
     // Ends the stream and create a new file.
     continueNewFile(path: string, comments: Comments): void;
