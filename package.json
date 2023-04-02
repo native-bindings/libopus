@@ -4,11 +4,25 @@
         "nan": "2.x",
         "prettier": "^2.8.7"
     },
+    "files": [
+        "!test/*.ogg",
+        "libopusenc-cmake/**/*.c",
+        "libopusenc-cmake/**/CMakeLists.txt",
+        "libopusenc-cmake/**/*.h",
+        "opus/**/*.c",
+        "opus/**/CMakeLists.txt",
+        "opus/**/*.h",
+        "CMakeLists.txt",
+        "speexdsp-cmake/**/*.c",
+        "speexdsp-cmake/**/CMakeLists.txt",
+        "speexdsp-cmake/**/*.h"
+    ],
     "scripts": {
+        "test": "npx ts-node test",
         "prepublishOnly": "npx ts-node scripts/generate-constants.ts && yarn test",
         "postinstall": "npx cmake-js compile -C --CDCMAKE_EXPORT_COMPILE_COMMANDS=1"
     },
-    "name": "node-opusenc",
+    "name": "libopusenc",
     "version": "0.0.1",
     "devDependencies": {
         "@types/node": "18.x",
