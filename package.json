@@ -12,6 +12,8 @@
         "opus/**/*.c",
         "opus/**/CMakeLists.txt",
         "opus/**/*.h",
+        "*.cpp",
+        "*.h",
         "CMakeLists.txt",
         "speexdsp-cmake/**/*.c",
         "speexdsp-cmake/**/CMakeLists.txt",
