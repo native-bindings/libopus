@@ -9,6 +9,7 @@
         "libopusenc-cmake/**/*.c",
         "libopusenc-cmake/**/CMakeLists.txt",
         "libopusenc-cmake/**/*.h",
+        "libopusenc-cmake/**/*.h.in",
         "opus/**/*.c",
         "opus/**/CMakeLists.txt",
         "opus/**/*.h",
@@ -17,7 +18,8 @@
         "CMakeLists.txt",
         "speexdsp-cmake/**/*.c",
         "speexdsp-cmake/**/CMakeLists.txt",
-        "speexdsp-cmake/**/*.h"
+        "speexdsp-cmake/**/*.h",
+        "speexdsp-cmake/**/*.h.in"
     ],
     "scripts": {
         "test": "npx ts-node test",
