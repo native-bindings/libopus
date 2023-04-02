@@ -1,0 +1,17 @@
+{
+    "dependencies": {
+        "cmake-js": "7.x",
+        "nan": "2.x",
+        "prettier": "^2.8.7"
+    },
+    "scripts": {
+        "postinstall": "npx cmake-js compile -C --CDCMAKE_EXPORT_COMPILE_COMMANDS=1"
+    },
+    "devDependencies": {
+        "@types/node": "18.x",
+        "codestreamjs": "^0.0.1",
+        "glob": "9.x",
+        "ts-node": "10.x",
+        "typescript": "5.x"
+    }
+}

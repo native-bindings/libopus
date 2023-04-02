@@ -1,0 +1,10 @@
+/node_modules
+/build
+/cmake-build-*
+/.idea
+*.js
+*.d.ts
+!index.js
+!index.d.ts
+/.cache
+/.DS_Store
