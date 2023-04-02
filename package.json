@@ -12,6 +12,7 @@
         "!test/*.ogg",
         "libopusenc-cmake/**/*.c",
         "libopusenc-cmake/**/CMakeLists.txt",
+        "libopusenc-cmake/**/*.cmake",
         "libopusenc-cmake/**/*.h",
         "libopusenc-cmake/**/*.h.in",
         "opus/**/*.c",
@@ -23,6 +24,7 @@
         "speexdsp-cmake/**/*.c",
         "speexdsp-cmake/**/CMakeLists.txt",
         "speexdsp-cmake/**/*.h",
+        "speexdsp-cmake/**/*.cmake",
         "speexdsp-cmake/**/*.h.in"
     ],
     "scripts": {
