@@ -330,15 +330,6 @@ jsonfile@^6.0.1:
   optionalDependencies:
     graceful-fs "^4.1.6"
 
-"libopusenc@file:libopusenc-0.0.11.tgz":
-  version "0.0.11"
-  resolved "file:libopusenc-0.0.11.tgz"
-  integrity sha512-Vj2bkwqJRtf7M1XX85neUyNTxWZnmqpG4izhn4wbz8hUilmSFN7ZiCkJQFca5i5pSVmPPq8QmkTGdtwLc36s/w==
-  dependencies:
-    cmake-js "7.x"
-    nan "2.x"
-    prettier "^2.8.7"
-
 lodash.isplainobject@^4.0.6:
   version "4.0.6"
   resolved "https://registry.npmjs.org/lodash.isplainobject/-/lodash.isplainobject-4.0.6.tgz"
