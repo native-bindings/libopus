@@ -18,6 +18,7 @@
         "opus/**/*.c",
         "opus/**/CMakeLists.txt",
         "opus/**/*.h",
+        "opus/**/*.h.in",
         "opus/**/*.cmake",
         "*.cpp",
         "*.h",
