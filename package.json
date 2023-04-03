@@ -10,6 +10,7 @@
     },
     "main": "./index.js",
     "files": [
+        "src/**/*.{cpp,h}",
         "*.{js,cpp,c,h,d.ts}",
         "!test/*.ogg",
         "speexdsp-cmake/**/*.{in,txt,cmake,ac,h,c,am,mk}",
@@ -32,6 +33,7 @@
         "voice",
         "voip"
     ],
+    "license": "MIT",
     "name": "libopus",
     "version": "0.0.28",
     "devDependencies": {
