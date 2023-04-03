@@ -23,7 +23,7 @@
         "postinstall": "npx cmake-js compile -C --CDDOPUS_PACKAGE_VERSION='1.1.2' --CDCMAKE_EXPORT_COMPILE_COMMANDS=1"
     },
     "name": "libopusenc",
-    "version": "0.0.22",
+    "version": "0.0.23",
     "devDependencies": {
         "@types/node": "18.x",
         "codestreamjs": "^0.0.1",
