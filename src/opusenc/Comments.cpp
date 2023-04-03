@@ -1,7 +1,9 @@
-#include "Arguments.h"
+#include "../Arguments.h"
 #include "Comments.h"
 
-#include <opusenc.h>
+#include "opusenc.h"
+
+using namespace bindings::opusenc;
 
 Nan::Persistent<v8::Function> Comments::constructor;
 

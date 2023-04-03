@@ -4,6 +4,8 @@
 #include <nan.h>
 #include <opusenc.h>
 
+namespace bindings::opusenc {
+
 class Comments : public Nan::ObjectWrap {
 public:
     OggOpusComments* value = nullptr;
@@ -17,5 +19,6 @@ private:
     static NAN_METHOD(AddPicture);
 };
 
+}
 
 #endif //OPUSENC_COMMENTS_H

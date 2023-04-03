@@ -1,10 +1,10 @@
 #include "Encoder.h"
-#include "Arguments.h"
+#include "../Arguments.h"
+#include "../Constants.h"
 
+using namespace bindings::opusenc;
 
 Nan::Persistent<v8::Function> Encoder::constructor;
-
-void SetEncoderGetterPrototypeMethods(v8::Local<v8::FunctionTemplate>& tpl);
 
 static bool AssertNotCreatedEncoder(Encoder* enc){
     if(enc->value){

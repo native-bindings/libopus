@@ -6,6 +6,8 @@
 #include <opusenc.h>
 #include <nan.h>
 
+namespace bindings::opusenc {
+
 class Encoder : public Nan::ObjectWrap {
 public:
     int error;
@@ -28,5 +30,6 @@ private:
     static NAN_METHOD(DeferredInitWithMapping);
 };
 
+}
 
 #endif //OPUSENC_ENCODER_H

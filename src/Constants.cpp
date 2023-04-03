@@ -1,6 +1,7 @@
 #include "Arguments.h"
-#include "Encoder.h"
+#include "opusenc/Encoder.h"
 #include <iostream>
+using namespace bindings::opusenc;
 static NAN_METHOD(SetApplication) {
     auto* encoder = Arguments::Unwrap<Encoder>(info.This());
     opus_int32 v0;
@@ -349,7 +350,7 @@ static NAN_METHOD(SetPhaseInversionDisabled) {
         return;
     }
 }
-void SetEncoderGetterPrototypeMethods(v8::Local<v8::FunctionTemplate>& tpl){
+void SetEncoderGetterPrototypeMethods(v8::Local<v8::FunctionTemplate> tpl){
     Nan::SetPrototypeMethod(tpl,"setApplication",SetApplication);
     Nan::SetPrototypeMethod(tpl,"getApplication",GetApplication);
     Nan::SetPrototypeMethod(tpl,"setBitrate",SetBitrate);
@@ -381,7 +382,8 @@ void SetEncoderGetterPrototypeMethods(v8::Local<v8::FunctionTemplate>& tpl){
     Nan::SetPrototypeMethod(tpl,"getPredictionDisabled",GetPredictionDisabled);
     Nan::SetPrototypeMethod(tpl,"setPhaseInversionDisabled",SetPhaseInversionDisabled);
 }
-void SetConstants(v8::Local<v8::Object> exports){
+namespace Constants {
+void Init(v8::Local<v8::Object> exports){
     auto constants = Nan::New<v8::Object>();
     Nan::Set(constants,Nan::New("OPUS_OK").ToLocalChecked(),Nan::New(0));
     Nan::Set(constants,Nan::New("OPUS_BAD_ARG").ToLocalChecked(),Nan::New(1));
@@ -480,4 +482,394 @@ void SetConstants(v8::Local<v8::Object> exports){
     Nan::Set(constants,Nan::New("OPE_GET_NB_STREAMS_REQUEST").ToLocalChecked(),Nan::New(23));
     Nan::Set(constants,Nan::New("OPE_GET_NB_COUPLED_STREAMS_REQUEST").ToLocalChecked(),Nan::New(24));
     Nan::Set(exports,Nan::New("constants").ToLocalChecked(),constants);
+}
+}
+bool ConvertOpusJavaScriptConstant(v8::Local<v8::Value> val, int& out) {
+    if(!val->IsNumber()) return false;
+    auto n = Nan::To<v8::Number>(val).ToLocalChecked()->Value();
+    if(n == 0) {
+        out = OPUS_OK;
+        return true;
+    }
+    if(n == 1) {
+        out = OPUS_BAD_ARG;
+        return true;
+    }
+    if(n == 2) {
+        out = OPUS_BUFFER_TOO_SMALL;
+        return true;
+    }
+    if(n == 3) {
+        out = OPUS_INTERNAL_ERROR;
+        return true;
+    }
+    if(n == 4) {
+        out = OPUS_INVALID_PACKET;
+        return true;
+    }
+    if(n == 5) {
+        out = OPUS_UNIMPLEMENTED;
+        return true;
+    }
+    if(n == 6) {
+        out = OPUS_INVALID_STATE;
+        return true;
+    }
+    if(n == 7) {
+        out = OPUS_ALLOC_FAIL;
+        return true;
+    }
+    if(n == 8) {
+        out = OPUS_SET_APPLICATION_REQUEST;
+        return true;
+    }
+    if(n == 9) {
+        out = OPUS_GET_APPLICATION_REQUEST;
+        return true;
+    }
+    if(n == 10) {
+        out = OPUS_SET_BITRATE_REQUEST;
+        return true;
+    }
+    if(n == 11) {
+        out = OPUS_GET_BITRATE_REQUEST;
+        return true;
+    }
+    if(n == 12) {
+        out = OPUS_SET_MAX_BANDWIDTH_REQUEST;
+        return true;
+    }
+    if(n == 13) {
+        out = OPUS_GET_MAX_BANDWIDTH_REQUEST;
+        return true;
+    }
+    if(n == 14) {
+        out = OPUS_SET_VBR_REQUEST;
+        return true;
+    }
+    if(n == 15) {
+        out = OPUS_GET_VBR_REQUEST;
+        return true;
+    }
+    if(n == 16) {
+        out = OPUS_SET_BANDWIDTH_REQUEST;
+        return true;
+    }
+    if(n == 17) {
+        out = OPUS_GET_BANDWIDTH_REQUEST;
+        return true;
+    }
+    if(n == 18) {
+        out = OPUS_SET_COMPLEXITY_REQUEST;
+        return true;
+    }
+    if(n == 19) {
+        out = OPUS_GET_COMPLEXITY_REQUEST;
+        return true;
+    }
+    if(n == 20) {
+        out = OPUS_SET_INBAND_FEC_REQUEST;
+        return true;
+    }
+    if(n == 21) {
+        out = OPUS_GET_INBAND_FEC_REQUEST;
+        return true;
+    }
+    if(n == 22) {
+        out = OPUS_SET_PACKET_LOSS_PERC_REQUEST;
+        return true;
+    }
+    if(n == 23) {
+        out = OPUS_GET_PACKET_LOSS_PERC_REQUEST;
+        return true;
+    }
+    if(n == 24) {
+        out = OPUS_SET_DTX_REQUEST;
+        return true;
+    }
+    if(n == 25) {
+        out = OPUS_GET_DTX_REQUEST;
+        return true;
+    }
+    if(n == 26) {
+        out = OPUS_SET_VBR_CONSTRAINT_REQUEST;
+        return true;
+    }
+    if(n == 27) {
+        out = OPUS_GET_VBR_CONSTRAINT_REQUEST;
+        return true;
+    }
+    if(n == 28) {
+        out = OPUS_SET_FORCE_CHANNELS_REQUEST;
+        return true;
+    }
+    if(n == 29) {
+        out = OPUS_GET_FORCE_CHANNELS_REQUEST;
+        return true;
+    }
+    if(n == 30) {
+        out = OPUS_SET_SIGNAL_REQUEST;
+        return true;
+    }
+    if(n == 31) {
+        out = OPUS_GET_SIGNAL_REQUEST;
+        return true;
+    }
+    if(n == 32) {
+        out = OPUS_GET_LOOKAHEAD_REQUEST;
+        return true;
+    }
+    if(n == 33) {
+        out = OPUS_GET_SAMPLE_RATE_REQUEST;
+        return true;
+    }
+    if(n == 34) {
+        out = OPUS_GET_FINAL_RANGE_REQUEST;
+        return true;
+    }
+    if(n == 35) {
+        out = OPUS_GET_PITCH_REQUEST;
+        return true;
+    }
+    if(n == 36) {
+        out = OPUS_SET_GAIN_REQUEST;
+        return true;
+    }
+    if(n == 37) {
+        out = OPUS_GET_GAIN_REQUEST;
+        return true;
+    }
+    if(n == 38) {
+        out = OPUS_SET_LSB_DEPTH_REQUEST;
+        return true;
+    }
+    if(n == 39) {
+        out = OPUS_GET_LSB_DEPTH_REQUEST;
+        return true;
+    }
+    if(n == 40) {
+        out = OPUS_GET_LAST_PACKET_DURATION_REQUEST;
+        return true;
+    }
+    if(n == 41) {
+        out = OPUS_SET_EXPERT_FRAME_DURATION_REQUEST;
+        return true;
+    }
+    if(n == 42) {
+        out = OPUS_GET_EXPERT_FRAME_DURATION_REQUEST;
+        return true;
+    }
+    if(n == 43) {
+        out = OPUS_SET_PREDICTION_DISABLED_REQUEST;
+        return true;
+    }
+    if(n == 44) {
+        out = OPUS_GET_PREDICTION_DISABLED_REQUEST;
+        return true;
+    }
+    if(n == 45) {
+        out = OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST;
+        return true;
+    }
+    if(n == 46) {
+        out = OPUS_GET_PHASE_INVERSION_DISABLED_REQUEST;
+        return true;
+    }
+    if(n == 47) {
+        out = OPUS_GET_IN_DTX_REQUEST;
+        return true;
+    }
+    if(n == 52) {
+        out = OPUS_AUTO;
+        return true;
+    }
+    if(n == 53) {
+        out = OPUS_BITRATE_MAX;
+        return true;
+    }
+    if(n == 54) {
+        out = OPUS_APPLICATION_VOIP;
+        return true;
+    }
+    if(n == 55) {
+        out = OPUS_APPLICATION_AUDIO;
+        return true;
+    }
+    if(n == 56) {
+        out = OPUS_APPLICATION_RESTRICTED_LOWDELAY;
+        return true;
+    }
+    if(n == 57) {
+        out = OPUS_SIGNAL_VOICE;
+        return true;
+    }
+    if(n == 58) {
+        out = OPUS_SIGNAL_MUSIC;
+        return true;
+    }
+    if(n == 59) {
+        out = OPUS_BANDWIDTH_NARROWBAND;
+        return true;
+    }
+    if(n == 60) {
+        out = OPUS_BANDWIDTH_MEDIUMBAND;
+        return true;
+    }
+    if(n == 61) {
+        out = OPUS_BANDWIDTH_WIDEBAND;
+        return true;
+    }
+    if(n == 62) {
+        out = OPUS_BANDWIDTH_SUPERWIDEBAND;
+        return true;
+    }
+    if(n == 63) {
+        out = OPUS_BANDWIDTH_FULLBAND;
+        return true;
+    }
+    if(n == 64) {
+        out = OPUS_FRAMESIZE_ARG;
+        return true;
+    }
+    if(n == 65) {
+        out = OPUS_FRAMESIZE_2_5_MS;
+        return true;
+    }
+    if(n == 66) {
+        out = OPUS_FRAMESIZE_5_MS;
+        return true;
+    }
+    if(n == 67) {
+        out = OPUS_FRAMESIZE_10_MS;
+        return true;
+    }
+    if(n == 68) {
+        out = OPUS_FRAMESIZE_20_MS;
+        return true;
+    }
+    if(n == 69) {
+        out = OPUS_FRAMESIZE_40_MS;
+        return true;
+    }
+    if(n == 70) {
+        out = OPUS_FRAMESIZE_60_MS;
+        return true;
+    }
+    if(n == 71) {
+        out = OPUS_FRAMESIZE_80_MS;
+        return true;
+    }
+    if(n == 72) {
+        out = OPUS_FRAMESIZE_100_MS;
+        return true;
+    }
+    if(n == 73) {
+        out = OPUS_FRAMESIZE_120_MS;
+        return true;
+    }
+    if(n == 104) {
+        out = OPUS_RESET_STATE;
+        return true;
+    }
+    if(n == 0) {
+        out = OPE_API_VERSION;
+        return true;
+    }
+    if(n == 1) {
+        out = OPE_OK;
+        return true;
+    }
+    if(n == 2) {
+        out = OPE_BAD_ARG;
+        return true;
+    }
+    if(n == 3) {
+        out = OPE_INTERNAL_ERROR;
+        return true;
+    }
+    if(n == 4) {
+        out = OPE_UNIMPLEMENTED;
+        return true;
+    }
+    if(n == 5) {
+        out = OPE_ALLOC_FAIL;
+        return true;
+    }
+    if(n == 6) {
+        out = OPE_CANNOT_OPEN;
+        return true;
+    }
+    if(n == 7) {
+        out = OPE_TOO_LATE;
+        return true;
+    }
+    if(n == 8) {
+        out = OPE_INVALID_PICTURE;
+        return true;
+    }
+    if(n == 9) {
+        out = OPE_INVALID_ICON;
+        return true;
+    }
+    if(n == 10) {
+        out = OPE_WRITE_FAIL;
+        return true;
+    }
+    if(n == 11) {
+        out = OPE_CLOSE_FAIL;
+        return true;
+    }
+    if(n == 12) {
+        out = OPE_SET_DECISION_DELAY_REQUEST;
+        return true;
+    }
+    if(n == 13) {
+        out = OPE_GET_DECISION_DELAY_REQUEST;
+        return true;
+    }
+    if(n == 14) {
+        out = OPE_SET_MUXING_DELAY_REQUEST;
+        return true;
+    }
+    if(n == 15) {
+        out = OPE_GET_MUXING_DELAY_REQUEST;
+        return true;
+    }
+    if(n == 16) {
+        out = OPE_SET_COMMENT_PADDING_REQUEST;
+        return true;
+    }
+    if(n == 17) {
+        out = OPE_GET_COMMENT_PADDING_REQUEST;
+        return true;
+    }
+    if(n == 18) {
+        out = OPE_SET_SERIALNO_REQUEST;
+        return true;
+    }
+    if(n == 19) {
+        out = OPE_GET_SERIALNO_REQUEST;
+        return true;
+    }
+    if(n == 20) {
+        out = OPE_SET_PACKET_CALLBACK_REQUEST;
+        return true;
+    }
+    if(n == 21) {
+        out = OPE_SET_HEADER_GAIN_REQUEST;
+        return true;
+    }
+    if(n == 22) {
+        out = OPE_GET_HEADER_GAIN_REQUEST;
+        return true;
+    }
+    if(n == 23) {
+        out = OPE_GET_NB_STREAMS_REQUEST;
+        return true;
+    }
+    if(n == 24) {
+        out = OPE_GET_NB_COUPLED_STREAMS_REQUEST;
+        return true;
+    }
+    return false;
 }

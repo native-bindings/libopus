@@ -14,9 +14,10 @@ add_subdirectory(opus)
 add_library(
     NodeOpusEnc SHARED
     ${CMAKE_JS_SRC}
-    main.cpp Encoder.cpp Encoder.h Comments.cpp Comments.h Arguments.cpp Arguments.h
-    Constants.cpp
-        Decoder.cpp Decoder.h)
+    src/Encoder.h src/Encoder.cpp src/opusenc/opusenc.cpp src/opusenc/opusenc.h
+    main.cpp src/opusenc/Encoder.cpp src/opusenc/Encoder.h src/opusenc/Comments.cpp src/opusenc/Comments.h
+    src/Arguments.cpp src/Arguments.h src/Constants.cpp src/Constants.h src/Decoder.cpp src/Decoder.h
+)
 target_include_directories(
     NodeOpusEnc PRIVATE
     ${NODE_INSTALL_DIR}/include/node

@@ -46,13 +46,12 @@ bool Arguments::ConvertValue(v8::Local<v8::Value> value, float *& out) {
     }
     auto view = value.As<v8::Float32Array>();
     float* buf = reinterpret_cast<float*>(view->Buffer()->Data());
-    buf += view->ByteOffset();
-    out = buf;
+    out = buf + view->ByteOffset();
     return true;
 }
 
 bool Arguments::ConvertValue(v8::Local<v8::Value> value, std::uint8_t *& out) {
-    if(!value->IsFloat32Array()){
+    if(!value->IsUint8Array()){
         return false;
     }
     auto view = value.As<v8::Float32Array>();

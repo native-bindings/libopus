@@ -25,13 +25,15 @@
     "keywords": [
         "opus",
         "opusenc",
+        "libopusenc",
         "audio",
+        "libopus",
         "speexdsp",
         "voice",
         "voip"
     ],
-    "name": "libopusenc",
-    "version": "0.0.27",
+    "name": "libopus",
+    "version": "0.0.26",
     "devDependencies": {
         "@types/node": "18.x",
         "codestreamjs": "^0.0.1",

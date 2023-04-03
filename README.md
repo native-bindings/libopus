@@ -1,16 +1,85 @@
-# node-opusenc
+# libopus
+
+## Installation
+
+```
+yarn add libopus
+```
 
 ## Description
 
 Entirely synchronous API to create .ogg files encoded using libopus library. It supports several sample rates (16000,48000 and more.).
 
-## Usage
+## Usage of libopus
+
+Below it's an example on how to use the opus codec by itself, without interference of the libopusenc. AFAIK, the encoded data cannot be directly placed in a .ogg file for playing. If you need that, see the next example.
 
 ```ts
-import { Comments, Encoder } from "node-opusenc";
+import opus from "libopus";
 
-const comments = new Comments();
-const enc = new Encoder();
+export function createTestCodec() {
+    const frameSize = 2880;
+    const sampleRate = 48000;
+    const channels = 1;
+
+    const enc = new opus.Encoder(
+        sampleRate,
+        channels,
+        opus.constants.OPUS_APPLICATION_RESTRICTED_LOWDELAY
+    );
+    const dec = new opus.Decoder(sampleRate, channels);
+
+    const pcmOut = new Float32Array(
+        frameSize * channels * Float32Array.BYTES_PER_ELEMENT
+    );
+
+    const encoded = new Uint8Array(10000);
+    const maxDataBytes = 1000; // it can be increased up to whatever `encoded` size is
+
+    const encodeFloat = (buf: Float32Array) => {
+        const encodedSampleCount = enc.encodeFloat(
+            buf,
+            frameSize,
+            encoded,
+            maxDataBytes
+        );
+        console.log("encoded samples: %d", encodedSampleCount);
+        return encodedSampleCount;
+    };
+
+    const decodeFloat = (buf: Uint8Array, samples: number) => {
+        const decodedSamples = dec.decodeFloat(
+            buf,
+            samples,
+            pcmOut,
+            frameSize,
+            0
+        );
+        return new Uint8Array(pcmOut.slice(0, decodedSamples).buffer);
+    };
+
+    const encodeAndDecode = (buf: Float32Array) => {
+        const encodedSampleCount = encodeFloat(buf);
+        return decodeFloat(encoded, encodedSampleCount);
+    };
+
+    return {
+        decode,
+        encode,
+        encodeAndDecode,
+    };
+}
+```
+
+## Usage of libopusenc
+
+This package comes with libopusenc embedded in it, so you can create .ogg/.opus files directly with it with any sample rate. It will use speexdsp in case a sample rate that is not supported by libopus is used when creating the encoder. See the example below:
+
+```ts
+import opus from "libopus";
+
+const comments = new opus.opusenc.Comments();
+const enc = new opus.opusenc.Encoder();
 enc.createFile(comments, path.resolve(__dirname, "test1.ogg"), 48000, 1, 0);
 const pcm = child_process.spawn("arecord", [
     "-f",

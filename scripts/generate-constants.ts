@@ -182,8 +182,9 @@ async function createOpusGettersAndSetters() {
     }
     const cs = new CodeStream();
     cs.write('#include "Arguments.h"\n');
-    cs.write('#include "Encoder.h"\n');
+    cs.write('#include "opusenc/Encoder.h"\n');
     cs.write("#include <iostream>\n");
+    cs.write("using namespace bindings::opusenc;\n");
     const setterEnums = [
         {
             args: [
@@ -411,7 +412,7 @@ async function createOpusGettersAndSetters() {
         return `${value[0]?.toLowerCase()}${value.substring(1)}`;
     }
     cs.write(
-        "void SetEncoderGetterPrototypeMethods(v8::Local<v8::FunctionTemplate>& tpl){\n",
+        "void SetEncoderGetterPrototypeMethods(v8::Local<v8::FunctionTemplate> tpl){\n",
         () => {
             for (const name of getterNames) {
                 cs.write(
@@ -423,8 +424,9 @@ async function createOpusGettersAndSetters() {
         },
         "}\n"
     );
+    cs.write("namespace Constants {\n");
     cs.write(
-        "void SetConstants(v8::Local<v8::Object> exports){\n",
+        "void Init(v8::Local<v8::Object> exports){\n",
         () => {
             cs.write("auto constants = Nan::New<v8::Object>();\n");
             for (const m of macros) {
@@ -441,8 +443,48 @@ async function createOpusGettersAndSetters() {
         },
         "}\n"
     );
+    cs.write("}\n");
+    cs.write(
+        "bool ConvertOpusJavaScriptConstant(v8::Local<v8::Value> val, int& out) {\n",
+        () => {
+            cs.write(`if(!val->IsNumber()) return false;\n`);
+            cs.write(
+                "auto n = Nan::To<v8::Number>(val).ToLocalChecked()->Value();\n"
+            );
+            for (const m of macros) {
+                if (m.type !== "valueMacro") continue;
+                cs.write(
+                    `if(n == ${m.uuid}) {\n`,
+                    () => {
+                        cs.write(`out = ${m.key};\n`);
+                        cs.write("return true;\n");
+                    },
+                    "}\n"
+                );
+            }
+            cs.write("return false;\n");
+        },
+        "}\n"
+    );
     await fs.promises.writeFile(
-        path.resolve(__dirname, "../Constants.cpp"),
+        path.resolve(__dirname, "../src/Constants.cpp"),
+        cs.value()
+    );
+    cs.write(
+        "const constants: {\n",
+        () => {
+            for (const m of macros) {
+                if (m.type !== "valueMacro") {
+                    continue;
+                }
+                cs.write(`${m.key}: ${m.uuid};\n`);
+            }
+        },
+        "};\n"
+    );
+    cs.write("export default constants;\n");
+    await fs.promises.writeFile(
+        path.resolve(__dirname, "../constants.d.ts"),
         cs.value()
     );
 }
