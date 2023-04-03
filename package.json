@@ -14,11 +14,11 @@
         "libopusenc-cmake/**/CMakeLists.txt",
         "libopusenc-cmake/**/*.cmake",
         "libopusenc-cmake/**/*.h",
-        "libopusenc-cmake/**/*.h.in",
+        "libopusenc-cmake/**/*.in",
         "opus/**/*.c",
         "opus/**/CMakeLists.txt",
         "opus/**/*.h",
-        "opus/**/*.h.in",
+        "opus/**/*.in",
         "opus/**/*.cmake",
         "*.cpp",
         "*.h",
@@ -27,7 +27,7 @@
         "speexdsp-cmake/**/CMakeLists.txt",
         "speexdsp-cmake/**/*.h",
         "speexdsp-cmake/**/*.cmake",
-        "speexdsp-cmake/**/*.h.in"
+        "speexdsp-cmake/**/*.in"
     ],
     "scripts": {
         "test": "npx ts-node test",
