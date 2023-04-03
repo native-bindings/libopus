@@ -10,23 +10,12 @@
     },
     "main": "./index.js",
     "files": [
-        "*.js",
-        "*.d.ts",
+        "*.{js,cpp,c,h,d.ts}",
         "!test/*.ogg",
-        "libopusenc-cmake/**/*.c",
-        "libopusenc-cmake/**/CMakeLists.txt",
-        "libopusenc-cmake/**/*.cmake",
-        "libopusenc-cmake/**/*.h",
-        "libopusenc-cmake/**/*.in",
+        "speexdsp-cmake/**/*.{in,txt,cmake,ac,h,c,am,mk}",
+        "libopusenc-cmake/**/*.{in,txt,cmake,ac,h,c,am,mk}",
         "opus/**/*.{in,txt,cmake,ac,h,c,am,mk}",
-        "*.cpp",
-        "*.h",
-        "CMakeLists.txt",
-        "speexdsp-cmake/**/*.c",
-        "speexdsp-cmake/**/CMakeLists.txt",
-        "speexdsp-cmake/**/*.h",
-        "speexdsp-cmake/**/*.cmake",
-        "speexdsp-cmake/**/*.in"
+        "CMakeLists.txt"
     ],
     "scripts": {
         "test": "npx ts-node test",
