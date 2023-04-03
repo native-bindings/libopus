@@ -1,6 +1,7 @@
 {
     "dependencies": {
         "cmake-js": "7.x",
+        "libopusenc": "file:libopusenc-0.0.11.tgz",
         "nan": "2.x",
         "prettier": "^2.8.7"
     },
@@ -15,12 +16,8 @@
         "libopusenc-cmake/**/*.cmake",
         "libopusenc-cmake/**/*.h",
         "libopusenc-cmake/**/*.in",
-        "opus/**/*.c",
         "opus/**/CMakeLists.txt",
-        "opus/**/*.h",
-        "opus/**/*.in",
-        "opus/**/*.ac",
-        "opus/**/*.cmake",
+        "opus/**/*.{in,cmake,ac,h,c,am,mk}",
         "*.cpp",
         "*.h",
         "CMakeLists.txt",
