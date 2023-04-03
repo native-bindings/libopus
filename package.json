@@ -20,7 +20,7 @@
     "scripts": {
         "test": "npx ts-node test",
         "prepublishOnly": "npx ts-node scripts/generate-constants.ts && yarn test",
-        "postinstall": "npx cmake-js compile -C --CDDOPUS_PACKAGE_VERSION='1.1.2' --CDCMAKE_EXPORT_COMPILE_COMMANDS=1"
+        "postinstall": "npx cmake-js compile -C --CDCMAKE_EXPORT_COMPILE_COMMANDS=1"
     },
     "name": "libopusenc",
     "version": "0.0.23",
