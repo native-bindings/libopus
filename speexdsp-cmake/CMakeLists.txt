@@ -51,7 +51,7 @@ configure_file(
     ${SRC_FOLDER}/include/speex/speexdsp_config_types.h
 )
 
-set(FIXED_POINT 1)
+set(FLOATING_POINT 1)
 set(USE_SMALLFT 1)
 set(EXPORT "__attribute__((visibility(\"default\")))")
 configure_file(speexdsp.config.h.in ${SRC_FOLDER}/include/config.h)
