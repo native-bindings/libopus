@@ -1,1 +1,1 @@
-Object.assign(exports,require('./build/Release/NodeOpusEnc'));
+Object.assign(exports, require("./build/Release/NodeOpus"));
