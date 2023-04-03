@@ -35,7 +35,7 @@
     ],
     "license": "MIT",
     "name": "libopus",
-    "version": "0.0.28",
+    "version": "0.0.29",
     "devDependencies": {
         "@types/node": "18.x",
         "codestreamjs": "^0.0.1",
