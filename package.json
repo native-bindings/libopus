@@ -9,7 +9,10 @@
         "type": "git",
         "url": "https://github.com/victorqueiroz/node-opusenc"
     },
+    "main": "./index.js",
     "files": [
+        "*.js",
+        "*.d.ts",
         "!test/*.ogg",
         "libopusenc-cmake/**/*.c",
         "libopusenc-cmake/**/CMakeLists.txt",
