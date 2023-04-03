@@ -22,6 +22,14 @@
         "prepublishOnly": "npx ts-node scripts/generate-constants.ts && yarn run postinstall && yarn test",
         "postinstall": "npx cmake-js compile -C --CDCMAKE_EXPORT_COMPILE_COMMANDS=1"
     },
+    "keywords": [
+        "opus",
+        "opusenc",
+        "audio",
+        "speexdsp",
+        "voice",
+        "voip"
+    ],
     "name": "libopusenc",
     "version": "0.0.26",
     "devDependencies": {
