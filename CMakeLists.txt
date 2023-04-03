@@ -16,7 +16,7 @@ add_library(
     ${CMAKE_JS_SRC}
     main.cpp Encoder.cpp Encoder.h Comments.cpp Comments.h Arguments.cpp Arguments.h
     Constants.cpp
-)
+        Decoder.cpp Decoder.h)
 target_include_directories(
     NodeOpusEnc PRIVATE
     ${NODE_INSTALL_DIR}/include/node
