@@ -1,1 +1,1 @@
-Object.assign(exports, require("./build/Release/NodeOpus"));
+Object.assign(exports, require("bindings")("NodeOpus"));

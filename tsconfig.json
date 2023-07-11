@@ -1,5 +1,8 @@
 {
     "compileOnSave": true,
+    "ts-node": {
+        "preferTsExts": true
+    },
     "compilerOptions": {
         "lib": ["DOM", "ESNext"],
         /* Visit https://aka.ms/tsconfig to read more about this file */

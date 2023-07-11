@@ -1,7 +1,7 @@
+#include <stdexcept>
+
 #include "../Arguments.h"
 #include "Comments.h"
-
-#include "opusenc.h"
 
 using namespace bindings::opusenc;
 
@@ -27,10 +27,13 @@ NAN_METHOD(Comments::New) {
 }
 
 NAN_METHOD(Comments::Add) {
-    auto* comments = Arguments::Unwrap<Comments>(info.This());
+    Comments* comments;
     std::string tag,value;
-    if(!Arguments::ConvertValue(info[0],tag) || !Arguments::ConvertValue(info[1],value)){
-        Nan::ThrowError("First and second argument must be valid strings");
+    if(
+        !Arguments::Unwrap<Comments>(info.This(), comments) ||
+        !Arguments::ConvertValue(info, 0, tag) ||
+        !Arguments::ConvertValue(info, 1,value)
+    ){
         return;
     }
     if(ope_comments_add(comments->value,tag.c_str(),value.c_str()) != OPE_OK){
@@ -39,23 +42,20 @@ NAN_METHOD(Comments::Add) {
 }
 
 NAN_METHOD(Comments::AddPicture) {
-    auto* comments = Arguments::Unwrap<Comments>(info.This());
+    Comments* comments;
     int pictureType;
     std::string filename,description;
-    if(!Arguments::ConvertValue(info[0],filename)){
-        Nan::ThrowError("First argument must be a valid filename");
-        return;
-    }
-    if(!Arguments::ConvertValue(info[1],pictureType)){
-        Nan::ThrowError("Second argument must be a valid pictureType");
-        return;
-    }
-    if(!Arguments::ConvertValue(info[2],description)) {
-        Nan::ThrowError("Third argument must be a valid description");
+    if(
+        !Arguments::Unwrap<Comments>(info.This(),comments) ||
+        !Arguments::ConvertValue(info, 0, filename) ||
+        !Arguments::ConvertValue(info, 1, pictureType) ||
+        !Arguments::ConvertValue(info, 2, description)
+    ) {
         return;
     }
     if(ope_comments_add_picture(comments->value,filename.c_str(),pictureType,description.c_str()) != OPE_OK){
         Nan::ThrowError("Failed to add comments");
+        return;
     }
 }
 

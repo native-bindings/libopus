@@ -13,7 +13,7 @@ add_library(
 
 )
 target_include_directories(libopusenc PUBLIC ${SRC_FOLDER}/include ${SRC_FOLDER}/src)
-target_link_libraries(libopusenc PUBLIC opus PRIVATE speexdsp)
+target_link_libraries(libopusenc PRIVATE opus speexdsp)
 target_compile_definitions(
     libopusenc PRIVATE
     PACKAGE_VERSION="0.0.1" PACKAGE_NAME="opusenc" HAVE_CONFIG_H

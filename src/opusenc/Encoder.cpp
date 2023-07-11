@@ -43,26 +43,19 @@ NAN_METHOD(Encoder::New) {
 }
 
 NAN_METHOD(Encoder::CreatePull){
-    auto* enc = Arguments::Unwrap<Encoder>(info.This());
+    Encoder* enc;
+    Comments* comments;
     if(!AssertNotCreatedEncoder(enc)){
         return;
     }
     int rate,channels,family;
-    auto* comments = Arguments::Unwrap<Comments>(info[0]);
-    if(!comments){
-        Nan::ThrowError("First argument must be a valid Comments instanc");
-        return;
-    }
-    if(!Arguments::ConvertValue(info[1],rate)){
-        Nan::ThrowError("Second argument must be a valid integer");
-        return;
-    }
-    if(!Arguments::ConvertValue(info[1],channels)){
-        Nan::ThrowError("Third argument must be a valid integer");
-        return;
-    }
-    if(!Arguments::ConvertValue(info[2],family)){
-        Nan::ThrowError("Forth argument must be a valid integer");
+    if(
+        !Arguments::Unwrap<Encoder>(info.This(), enc) ||
+        !Arguments::Unwrap<Comments>(info[0], comments) ||
+        !Arguments::ConvertValue(info, 1, rate) ||
+        !Arguments::ConvertValue(info, 1, channels) ||
+        !Arguments::ConvertValue(info, 2, family)
+    ){
         return;
     }
     enc->value = ope_encoder_create_pull(comments->value, rate, channels, family, &enc->error);
@@ -73,31 +66,23 @@ NAN_METHOD(Encoder::CreatePull){
 }
 
 NAN_METHOD(Encoder::CreateFile){
-    auto* enc = Arguments::Unwrap<Encoder>(info.This());
+    Encoder* enc;
+    if(!Arguments::Unwrap<Encoder>(info.This(), enc)){
+        return;
+    }
     if(!AssertNotCreatedEncoder(enc)){
         return;
     }
-    auto* comments = Arguments::Unwrap<Comments>(info[0]);
-    if(!comments){
-        Nan::ThrowError("First argument must be a valid Comments instance");
-        return;
-    }
+    Comments* comments;
     std::string file;
-    if(!Arguments::ConvertValue(info[1],file)){
-        Nan::ThrowError("Second argument must be a valid string");
-        return;
-    }
     int rate,channels,family;
-    if(!Arguments::ConvertValue(info[2],rate)){
-        Nan::ThrowError("Third argument must be a valid integer");
-        return;
-    }
-    if(!Arguments::ConvertValue(info[3],channels)){
-        Nan::ThrowError("Forth argument must be a valid integer");
-        return;
-    }
-    if(!Arguments::ConvertValue(info[4],family)){
-        Nan::ThrowError("Fifth argument must be a valid integer");
+    if(
+        !Arguments::Unwrap<Comments>(info, 0, comments) ||
+        !Arguments::ConvertValue(info, 1, file) ||
+        !Arguments::ConvertValue(info, 2, rate) ||
+        !Arguments::ConvertValue(info, 3, channels) ||
+        !Arguments::ConvertValue(info, 4, family)
+    ){
         return;
     }
     enc->value = ope_encoder_create_file(file.c_str(),comments->value,rate,channels,family,&enc->error);
@@ -108,7 +93,10 @@ NAN_METHOD(Encoder::CreateFile){
 }
 
 NAN_METHOD(Encoder::Drain){
-    auto* enc = Arguments::Unwrap<Encoder>(info.This());
+    Encoder* enc;
+    if(!Arguments::Unwrap<Encoder>(info.This(), enc)){
+        return;
+    }
     if(ope_encoder_drain(enc->value) != OPE_OK){
         Nan::ThrowError("Failed to drain encoder");
     }
@@ -116,10 +104,12 @@ NAN_METHOD(Encoder::Drain){
 }
 
 NAN_METHOD(Encoder::ChainCurrent){
-    auto* enc = Arguments::Unwrap<Encoder>(info.This());
-    auto* comments = Arguments::Unwrap<Comments>(info[0]);
-    if(!comments){
-        Nan::ThrowError("First argument must be a valid instance of Comments");
+    Encoder* enc;
+    Comments* comments;
+    if(
+        !Arguments::Unwrap<Encoder>(info.This(), enc) ||
+        !Arguments::Unwrap<Comments>(info[0], comments)
+    ) {
         return;
     }
     if(ope_encoder_chain_current(enc->value,comments->value) != OPE_OK){
@@ -128,7 +118,10 @@ NAN_METHOD(Encoder::ChainCurrent){
 }
 
 NAN_METHOD(Encoder::FlushHeader) {
-    auto* enc = Arguments::Unwrap<Encoder>(info.This());
+    Encoder* enc;
+    if(!Arguments::Unwrap<Encoder>(info.This(), enc)){
+        return;
+    }
     enc->error = ope_encoder_flush_header(enc->value);
     if(enc->error != OPE_OK){
         Nan::ThrowError(Nan::New("Failed to flush header with error: " + std::string(ope_strerror(enc->error))).ToLocalChecked());
@@ -136,15 +129,14 @@ NAN_METHOD(Encoder::FlushHeader) {
 }
 
 NAN_METHOD(Encoder::Write){
-    auto* enc = Arguments::Unwrap<Encoder>(info.This());
+    Encoder* enc;
     std::int16_t* pcm;
-    if(!Arguments::ConvertValue(info[0],pcm)){
-        Nan::ThrowError("First argument must be a valid Int16Array instance");
-        return;
-    }
     int samplesPerChannel;
-    if(!Arguments::ConvertValue(info[1],samplesPerChannel)){
-        Nan::ThrowError("Second argument must have a valid samples per channel");
+    if(
+        !Arguments::Unwrap<Encoder>(info.This(), enc) ||
+        !Arguments::ConvertValue(info, 0,pcm) ||
+        !Arguments::ConvertValue(info, 1,samplesPerChannel)
+    ){
         return;
     }
     if(ope_encoder_write(enc->value, pcm, samplesPerChannel) != OPE_OK){
@@ -154,19 +146,17 @@ NAN_METHOD(Encoder::Write){
 }
 
 NAN_METHOD(Encoder::DeferredInitWithMapping) {
-    auto* enc = Arguments::Unwrap<Encoder>(info.This());
+    Encoder* enc;
     int family, streams,coupled_streams;
+    std::uint8_t* mapping;
     if(
-        !Arguments::ConvertValue(info[0],family) ||
-        !Arguments::ConvertValue(info[1],streams) ||
-        !Arguments::ConvertValue(info[2],coupled_streams)
+        !Arguments::Unwrap<Encoder>(info.This(), enc) ||
+        !Arguments::ConvertValue(info, 0, family) ||
+        !Arguments::ConvertValue(info, 1, streams) ||
+        !Arguments::ConvertValue(info, 2, coupled_streams) ||
+        !Arguments::ConvertValue(info, 3, mapping)
     ){
         Nan::ThrowError("First, second and third arguments must be valid integers");
-        return;
-    }
-    std::uint8_t* mapping;
-    if(!Arguments::ConvertValue(info[3],mapping)){
-        Nan::ThrowError("Forth argument must be a valid Uint8Array instance");
         return;
     }
     if(ope_encoder_deferred_init_with_mapping(enc->value,family,streams,coupled_streams,mapping) != OPE_OK){
@@ -175,15 +165,14 @@ NAN_METHOD(Encoder::DeferredInitWithMapping) {
 }
 
 NAN_METHOD(Encoder::ContinueNewFile){
-    auto* enc = Arguments::Unwrap<Encoder>(info.This());
-    std::string path;
-    if(!Arguments::ConvertValue(info[0],path)){
-        Nan::ThrowError("First argument must be a string");
-        return;
-    }
+    Encoder* enc;
     Comments* comments;
-    if(!Arguments::Unwrap(info[1],comments)){
-        Nan::ThrowError("Second argument must be a valid instance of comments");
+    std::string path;
+    if(
+        !Arguments::Unwrap<Encoder>(info.This(), enc) ||
+        !Arguments::ConvertValue(info, 0,path) ||
+        !Arguments::Unwrap(info, 1,comments)
+    ){
         return;
     }
     if(ope_encoder_continue_new_file(enc->value, path.c_str(), comments->value) != OPE_OK){
@@ -193,28 +182,30 @@ NAN_METHOD(Encoder::ContinueNewFile){
 
 
 NAN_METHOD(Encoder::GetPage) {
-    auto* enc = Arguments::Unwrap<Encoder>(info.This());
+    Encoder* enc;
     bool flush;
-    if(!Arguments::ConvertValue(info[0],flush)){
-        flush = false;
-    }
     opus_int32 len;
     unsigned char* page;
+    if(!Arguments::Unwrap<Encoder>(info.This(), enc)) {
+        return;
+    }
+    if(!Arguments::ConvertValue(info, 0,flush, false)){
+        flush = false;
+    }
     if(ope_encoder_get_page(enc->value,&page,&len,flush ? 1 : 0) != OPE_OK){
         Nan::ThrowError("Failed to get page");
     }
 }
 
 NAN_METHOD(Encoder::WriteFloat){
-    auto* enc = Arguments::Unwrap<Encoder>(info.This());
+    Encoder* enc;
     float* pcm;
-    if(!Arguments::ConvertValue(info[0],pcm)){
-        Nan::ThrowError("First argument must be a valid Int16Array instance");
-        return;
-    }
     int samplesPerChannel;
-    if(!Arguments::ConvertValue(info[1],samplesPerChannel)){
-        Nan::ThrowError("Second argument must have a valid samples per channel");
+    if(
+        !Arguments::Unwrap<Encoder>(info.This(), enc) ||
+        !Arguments::ConvertValue(info, 0, pcm) ||
+        !Arguments::ConvertValue(info, 1, samplesPerChannel)
+    ) {
         return;
     }
     enc->error = ope_encoder_write_float(enc->value, pcm, samplesPerChannel);

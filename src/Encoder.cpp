@@ -14,7 +14,9 @@ void Encoder::Init(v8::Local<v8::Object> exports) {
     tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
     Nan::SetPrototypeMethod(tpl,"encode",Encode);
+    Nan::SetPrototypeMethod(tpl,"encodeAsync",EncodeAsync);
     Nan::SetPrototypeMethod(tpl,"encodeFloat",EncodeFloat);
+    SetGettersAndSettersPrototypeMethods(tpl);
 
     constructor.Reset(Nan::GetFunction(tpl).ToLocalChecked());
 
@@ -23,15 +25,13 @@ void Encoder::Init(v8::Local<v8::Object> exports) {
 
 NAN_METHOD(Encoder::New){
     int sampleRate,channels,application, err;
-    if(!Arguments::ConvertValue(info[0],sampleRate)){
-        Nan::ThrowError("First argument must be a valid integer");
+    if(
+        !Arguments::ConvertValue(info, 0, sampleRate) ||
+        !Arguments::ConvertValue(info, 1, channels)
+    ) {
         return;
     }
-    if(!Arguments::ConvertValue(info[1],channels)){
-        Nan::ThrowError("Second argument must be a valid integer");
-        return;
-    }
-    if(!ConvertOpusJavaScriptConstant(info[2],application)){
+    if(!bindings::opusenc::ConvertOpusJavaScriptConstant(info[2],application)){
         Nan::ThrowError("Third argument must be a valid integer");
         return;
     }
@@ -50,36 +50,26 @@ NAN_METHOD(Encoder::New){
 }
 
 NAN_METHOD(Encoder::Encode){
-    auto* enc = Arguments::Unwrap<Encoder>(info.This());
+    Encoder* enc;
     opus_int32 maxDataBytes;
     opus_int16* pcm;
     int frameSize;
     std::uint8_t* data;
 
-    if(!Arguments::ConvertValue(info[0],pcm)){
-        Nan::ThrowError("First argument must be a valid Int16Array");
-        return;
-    }
-
-    if(!Arguments::ConvertValue(info[1],frameSize)){
-        Nan::ThrowError("Second argument must be a valid integer");
-        return;
-    }
-
-    if(!Arguments::ConvertValue(info[2],data)){
-        Nan::ThrowError("Third argument must be a valid instance of Uint8Array");
-        return;
-    }
-
-    if(!Arguments::ConvertValue(info[3],maxDataBytes)){
-        Nan::ThrowError("Forth argument must be a valid integer");
+    if(
+        !Arguments::Unwrap<Encoder>(info.This(), enc) ||
+        !Arguments::ConvertValue(info, 0, pcm) ||
+        !Arguments::ConvertValue(info, 1, frameSize) ||
+        !Arguments::ConvertValue(info, 2, data) ||
+        !Arguments::ConvertValue(info, 3, maxDataBytes)
+    ){
         return;
     }
 
     int encodedPacketLengthInBytes = opus_encode(enc->value,pcm,frameSize,data,maxDataBytes);
     if(encodedPacketLengthInBytes < 0){
         Nan::ThrowError(Nan::New(
-            "Failed to encode with error" + std::string(opus_strerror(encodedPacketLengthInBytes))
+            "Failed to encode with OPUS error: " + std::string(opus_strerror(encodedPacketLengthInBytes))
         ).ToLocalChecked());
         return;
     }
@@ -88,30 +78,59 @@ NAN_METHOD(Encoder::Encode){
 
 }
 
+NAN_METHOD(Encoder::EncodeAsync){
+    Encoder* enc;
+    opus_int32 maxDataBytes;
+    opus_int16* pcm;
+    int frameSize;
+    std::uint8_t* data;
+    v8::Local<v8::Function> callback;
+
+    if(
+        !Arguments::Unwrap<Encoder>(info.This(), enc) ||
+        !Arguments::ConvertValue(info, 0, pcm) ||
+        !Arguments::ConvertValue(info, 1, frameSize) ||
+        !Arguments::ConvertValue(info, 2, data) ||
+        !Arguments::ConvertValue(info, 3, maxDataBytes) ||
+        !Arguments::ConvertValue(info, 4, callback)
+    ){
+        return;
+    }
+
+    auto worker = new EncoderEncodeAsyncWorker(
+        new Nan::Callback(callback),
+        enc->value,
+        pcm,
+        frameSize,
+        data,
+        maxDataBytes
+    );
+    Nan::AsyncQueueWorker(worker);
+//    int encodedPacketLengthInBytes = opus_encode(enc->value,pcm,frameSize,data,maxDataBytes);
+//    if(encodedPacketLengthInBytes < 0){
+//        Nan::ThrowError(Nan::New(
+//            "Failed to encode with OPUS error: " + std::string(opus_strerror(encodedPacketLengthInBytes))
+//        ).ToLocalChecked());
+//        return;
+//    }
+//
+//    info.GetReturnValue().Set(Nan::New(encodedPacketLengthInBytes));
+
+}
+
 NAN_METHOD(Encoder::EncodeFloat){
-    auto* enc = Arguments::Unwrap<Encoder>(info.This());
+    Encoder* enc;
     opus_int32 maxDataBytes;
     float* pcm;
     int frameSize;
     std::uint8_t* data;
-
-    if(!Arguments::ConvertValue(info[0],pcm)){
-        Nan::ThrowError("First argument must be a valid Int16Array");
-        return;
-    }
-
-    if(!Arguments::ConvertValue(info[1],frameSize)){
-        Nan::ThrowError("Second argument must be a valid integer");
-        return;
-    }
-
-    if(!Arguments::ConvertValue(info[2],data)){
-        Nan::ThrowError("Third argument must be a valid instance of Uint8Array");
-        return;
-    }
-
-    if(!Arguments::ConvertValue(info[3],maxDataBytes)){
-        Nan::ThrowError("Forth argument must be a valid integer");
+    if(
+        !Arguments::Unwrap<Encoder>(info.This(), enc) ||
+        !Arguments::ConvertValue(info,0,pcm) ||
+        !Arguments::ConvertValue(info,1,frameSize) ||
+        !Arguments::ConvertValue(info,2,data) ||
+        !Arguments::ConvertValue(info,3,maxDataBytes)
+    ){
         return;
     }
 
@@ -133,4 +152,40 @@ Encoder::Encoder(OpusEncoder * value): value(value) {
 
 Encoder::~Encoder() {
     opus_encoder_destroy(value);
+}
+
+EncoderEncodeAsyncWorker::EncoderEncodeAsyncWorker(
+    Nan::Callback* callback,
+    OpusEncoder* encoder,
+    opus_int16 *pcm,
+    int frameSize,
+    std::uint8_t* data,
+    opus_int32 maxDataBytes
+):
+    Nan::AsyncWorker(callback),
+    encoder(encoder),
+    maxDataBytes(maxDataBytes),
+    pcm(pcm),
+    frameSize(frameSize),
+    data(data)
+{
+
+}
+
+void EncoderEncodeAsyncWorker::Execute() {
+    result = opus_encode(encoder, pcm, frameSize, data, maxDataBytes);
+}
+
+void EncoderEncodeAsyncWorker::HandleOKCallback() {
+    if(result < 0) {
+        v8::Local<v8::Value> argv[] = {
+            Nan::New(opus_strerror(result)).ToLocalChecked()
+        };
+        this->callback->Call(1,argv,async_resource);
+    } else {
+        v8::Local<v8::Value> argv[] = {
+            Nan::New(result)
+        };
+        this->callback->Call(1,argv,async_resource);
+    }
 }

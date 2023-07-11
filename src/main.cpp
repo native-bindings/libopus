@@ -1,7 +1,7 @@
-#include "src/Encoder.h"
-#include "src/Decoder.h"
-#include "src/opusenc/opusenc.h"
-#include "src/Constants.h"
+#include "Encoder.h"
+#include "Decoder.h"
+#include "opusenc/opusenc.h"
+#include "Constants.h"
 
 #include <nan.h>
 

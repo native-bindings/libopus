@@ -1,16 +1,83 @@
 export class Encoder {
     constructor(sampleRate: number, channels: number, app: number);
-    encode(pcm: Int16Array, frameSize: number, maxDataBytes: number): Buffer;
+    encode(
+        pcm: Int16Array,
+        frameSize: number,
+        outData: Uint8Array,
+        maxDataBytes: number
+    ): number;
+    encodeAsync(
+        pcm: Int16Array,
+        frameSize: number,
+        outData: Uint8Array,
+        maxDataBytes: number,
+        fn: (value: string | number) => void
+    ): void;
     encodeFloat(
         pcm: Float32Array,
         frameSize: number,
         data: Uint8Array,
         maxDataBytes: number
     ): number;
+    // generated functions
+    setApplication(value: number): void;
+    getApplication(): number;
+    setBitrate(value: number): void;
+    getBitrate(): number;
+    setMaxBandwidth(value: number): void;
+    getMaxBandwidth(): number;
+    setVbr(value: number): void;
+    getVbr(): number;
+    setBandwidth(value: number): void;
+    getBandwidth(): number;
+    setComplexity(value: number): void;
+    getComplexity(): number;
+    setInbandFec(value: number): void;
+    getInbandFec(): number;
+    setPacketLossPerc(value: number): void;
+    getPacketLossPerc(): number;
+    setDtx(value: number): void;
+    getDtx(): number;
+    setVbrConstraint(value: number): void;
+    getVbrConstraint(): number;
+    setForceChannels(value: number): void;
+    getForceChannels(): number;
+    setSignal(value: number): void;
+    getSignal(): number;
+    getLookahead(): number;
+    getSampleRate(): number;
+    getFinalRange(): number;
+    getPitch(): number;
+    setGain(value: number): void;
+    getGain(): number;
+    setLsbDepth(value: number): void;
+    getLsbDepth(): number;
+    getLastPacketDuration(): number;
+    setExpertFrameDuration(value: number): void;
+    getExpertFrameDuration(): number;
+    setPredictionDisabled(value: number): void;
+    getPredictionDisabled(): number;
+    setPhaseInversionDisabled(value: number): void;
+    getPhaseInversionDisabled(): number;
+    getInDtx(): number;
 }
 export class Decoder {
     constructor(sampleRate: number, channels: number);
-    decode(pcm: Uint8Array, frameSize: number, decodeFec: number): Int16Array;
+    decode(
+        encoded: Uint8Array,
+        encodedLength: number,
+        pcmOut: Int16Array,
+        frameSize: number,
+        decodeFec: number
+    ): number;
+    decodeAsync(
+        encoded: Uint8Array,
+        encodedLength: number,
+        pcmOut: Int16Array,
+        frameSize: number,
+        decodeFec: number,
+        fn: (value: string | number) => void
+    ): void;
     decodeFloat(
         encoded: Uint8Array,
         encodedLength: number,
@@ -18,6 +85,47 @@ export class Decoder {
         frameSize: number,
         decodeFec: number
     ): number;
+    // generated functions
+    setApplication(value: number): void;
+    getApplication(): number;
+    setBitrate(value: number): void;
+    getBitrate(): number;
+    setMaxBandwidth(value: number): void;
+    getMaxBandwidth(): number;
+    setVbr(value: number): void;
+    getVbr(): number;
+    setBandwidth(value: number): void;
+    getBandwidth(): number;
+    setComplexity(value: number): void;
+    getComplexity(): number;
+    setInbandFec(value: number): void;
+    getInbandFec(): number;
+    setPacketLossPerc(value: number): void;
+    getPacketLossPerc(): number;
+    setDtx(value: number): void;
+    getDtx(): number;
+    setVbrConstraint(value: number): void;
+    getVbrConstraint(): number;
+    setForceChannels(value: number): void;
+    getForceChannels(): number;
+    setSignal(value: number): void;
+    getSignal(): number;
+    getLookahead(): number;
+    getSampleRate(): number;
+    getFinalRange(): number;
+    getPitch(): number;
+    setGain(value: number): void;
+    getGain(): number;
+    setLsbDepth(value: number): void;
+    getLsbDepth(): number;
+    getLastPacketDuration(): number;
+    setExpertFrameDuration(value: number): void;
+    getExpertFrameDuration(): number;
+    setPredictionDisabled(value: number): void;
+    getPredictionDisabled(): number;
+    setPhaseInversionDisabled(value: number): void;
+    getPhaseInversionDisabled(): number;
+    getInDtx(): number;
 }
 
 export namespace opusenc {

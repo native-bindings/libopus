@@ -1,8 +1,8 @@
 {
     "dependencies": {
+        "bindings": "^1.5.0",
         "cmake-js": "7.x",
-        "nan": "2.x",
-        "prettier": "^2.8.7"
+        "nan": "2.x"
     },
     "repository": {
         "type": "git",
@@ -20,6 +20,8 @@
     ],
     "scripts": {
         "test": "npx ts-node test",
+        "compile:debug": "yarn run compile -D",
+        "compile": "npx cmake-js compile -C",
         "prepublishOnly": "npx ts-node scripts/generate-constants.ts && yarn run postinstall && yarn test",
         "postinstall": "npx cmake-js compile -C --CDCMAKE_EXPORT_COMPILE_COMMANDS=1"
     },
@@ -38,8 +40,11 @@
     "version": "0.0.30",
     "devDependencies": {
         "@types/node": "18.x",
+        "chalk": "4.x",
         "codestreamjs": "^0.0.1",
         "glob": "9.x",
+        "prettier": "2.x",
+        "rxjs": "7.x",
         "ts-node": "10.x",
         "typescript": "5.x"
     }

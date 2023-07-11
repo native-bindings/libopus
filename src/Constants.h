@@ -3,8 +3,16 @@
 
 #include <nan.h>
 
+namespace bindings {
+
+namespace opusenc {
+
 void SetEncoderGetterPrototypeMethods(v8::Local<v8::FunctionTemplate> tpl);
 bool ConvertOpusJavaScriptConstant(v8::Local<v8::Value> val, int& out);
+
+}
+
+}
 
 namespace Constants {
 
