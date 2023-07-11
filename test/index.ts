@@ -314,7 +314,7 @@ async function test(fn: () => Promise<unknown>) {
     }
 }
 
-const supportedFrameSizes = [2.5, 10, 20, 40, 60, 80, 100, 120];
+// const supportedFrameSizes = [2.5, 10, 20, 40, 60, 80, 100, 120];
 
 (async () => {
     console.log(chalk.bgWhite(chalk.black("-- starting tests")));
