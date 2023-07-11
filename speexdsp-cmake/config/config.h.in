@@ -1,0 +1,11 @@
+#ifndef SPEEXDSP_CMAKE_CONFIG_H_
+#define SPEEXDSP_CMAKE_CONFIG_H_
+
+#cmakedefine USE_GPL_FFTW3
+#cmakedefine USE_KISS_FFT
+#cmakedefine USE_INTEL_MKL
+#cmakedefine USE_SMALLFT
+#cmakedefine FIXED_POINT
+#cmakedefine FLOATING_POINT
+
+#endif // SPEEXDSP_CMAKE_CONFIG_H_
