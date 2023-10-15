@@ -15,9 +15,9 @@
     ],
     "scripts": {
         "test": "npx ts-node test",
-        "compile:debug": "yarn run compile -D",
+        "compile:debug": "npm run compile -- -D",
         "compile": "npx cmake-js compile -C",
-        "prepublishOnly": "npx ts-node scripts/generate-constants.ts && yarn run postinstall && yarn test",
+        "prepublishOnly": "npx ts-node scripts/generate-constants.ts && npm run postinstall && npm test",
         "postinstall": "npx cmake-js compile -C"
     },
     "keywords": [
