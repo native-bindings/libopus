@@ -30,4 +30,5 @@ set_target_properties(
 add_subdirectory(speexdsp-cmake)
 add_subdirectory(libopusenc-cmake)
 add_subdirectory(opus)
+add_subdirectory(opusfile)
 add_subdirectory(src)
