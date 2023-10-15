@@ -17,7 +17,7 @@ else()
     set(
         NODE_ADDON_INCLUDE_DIRECTORIES
         ${NODE_ADDON_INCLUDE_DIRECTORIES}
-        ${NODE_INSTALL_DIR}/include/node ${CMAKE_CURRENT_SOURCE_DIR}/node_modules/nan
+        $ENV{NVM_INC} ${CMAKE_CURRENT_SOURCE_DIR}/node_modules/nan
     )
 endif()
 
