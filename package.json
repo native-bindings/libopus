@@ -1,9 +1,4 @@
 {
-    "dependencies": {
-        "bindings": "^1.5.0",
-        "cmake-js": "7.x",
-        "nan": "2.x"
-    },
     "repository": {
         "type": "git",
         "url": "https://github.com/victorqueiroz/node-opusenc"
@@ -46,6 +41,11 @@
         "prettier": "2.x",
         "rxjs": "7.x",
         "ts-node": "10.x",
-        "typescript": "5.x"
+        "typescript": "^5.2.2"
+    },
+    "dependencies": {
+        "bindings": "^1.5.0",
+        "cmake-js": "^7.2.1",
+        "nan": "^2.18.0"
     }
 }
