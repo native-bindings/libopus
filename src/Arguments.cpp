@@ -26,7 +26,7 @@ bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, uint32_t i, std::in
     return true;
 }
 
-bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, uint32_t i, v8::Local<v8::Function>& out, bool shouldThrowError){
+bool Arguments:: ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, uint32_t i, v8::Local<v8::Function>& out, bool shouldThrowError){
     if(!AssertType(info,i,"valid function",shouldThrowError,[](v8::Local<v8::Value> val){
         return val->IsFunction();
     })){

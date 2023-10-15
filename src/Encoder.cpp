@@ -46,7 +46,6 @@ NAN_METHOD(Encoder::New){
     auto* enc = new Encoder(value);
     enc->Wrap(info.This());
     info.GetReturnValue().Set(info.This());
-
 }
 
 NAN_METHOD(Encoder::Encode){
