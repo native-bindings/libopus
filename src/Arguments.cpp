@@ -1,8 +1,8 @@
 #include "Arguments.h"
 
-static bool AssertType(
+bool AssertType(
     Nan::NAN_METHOD_ARGS_TYPE info,
-    uint32_t i,
+    Arguments::IndexIntType i,
     const char* name,
     bool shouldThrowError,
     bool checkType(v8::Local<v8::Value>)
@@ -16,7 +16,7 @@ static bool AssertType(
     return false;
 }
 
-bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, uint32_t i, std::int32_t& out, bool shouldThrowError){
+bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, IndexIntType i, std::int32_t& out, bool shouldThrowError){
     if(!AssertType(info,i,"valid signed 32-bit integer",shouldThrowError,[](v8::Local<v8::Value> val){
         return val->IsInt32();
     })){
@@ -26,7 +26,7 @@ bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, uint32_t i, std::in
     return true;
 }
 
-bool Arguments:: ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, uint32_t i, v8::Local<v8::Function>& out, bool shouldThrowError){
+bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, IndexIntType i, v8::Local<v8::Function>& out, bool shouldThrowError){
     if(!AssertType(info,i,"valid function",shouldThrowError,[](v8::Local<v8::Value> val){
         return val->IsFunction();
     })){
@@ -36,7 +36,7 @@ bool Arguments:: ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, uint32_t i, v8::Lo
     return true;
 }
 
-bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, uint32_t i, std::uint32_t& out, bool shouldThrowError){
+bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, IndexIntType i, std::uint32_t& out, bool shouldThrowError){
     if(!AssertType(info,i,"valid unsigned 32-bit integer",shouldThrowError,[](v8::Local<v8::Value> val){
         return val->IsUint32();
     })){
@@ -46,7 +46,7 @@ bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, uint32_t i, std::ui
     return true;
 }
 
-bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, uint32_t i, std::string& out, bool shouldThrowError){
+bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, IndexIntType i, std::string& out, bool shouldThrowError){
     if(!AssertType(info,i,"string",shouldThrowError,[](v8::Local<v8::Value> val){
         return val->IsString();
     })){
@@ -60,7 +60,7 @@ bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, uint32_t i, std::st
     return true;
 }
 
-bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, uint32_t i, std::int16_t*& out, bool shouldThrowError){
+bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, IndexIntType i, std::int16_t*& out, bool shouldThrowError){
     if(!AssertType(info,i,"valid Int16Array instance",shouldThrowError,[](v8::Local<v8::Value> val){
         return val->IsInt16Array();
     })){
@@ -70,7 +70,19 @@ bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, uint32_t i, std::in
     return true;
 }
 
-bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, uint32_t i, float *& out, bool shouldThrowError) {
+bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, IndexIntType i, std::int16_t*& out, size_t& len, bool shouldThrowError){
+    if(!AssertType(info,i,"valid Int16Array instance",shouldThrowError,[](v8::Local<v8::Value> val){
+        return val->IsInt16Array();
+    })){
+        return false;
+    }
+    auto contents = Nan::TypedArrayContents<std::int16_t>(info[i]);
+    out = *contents;
+    len = contents.length();
+    return true;
+}
+
+bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, IndexIntType i, float *& out, bool shouldThrowError) {
     if(!AssertType(info,i,"valid Float32Array instance",shouldThrowError,[](v8::Local<v8::Value> val){
         return val->IsFloat32Array();
     })){
@@ -80,7 +92,20 @@ bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, uint32_t i, float *
     return true;
 }
 
-bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, uint32_t i, std::uint8_t *& out, bool shouldThrowError) {
+bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, IndexIntType i, float*& out, size_t& len, bool shouldThrowError) {
+    if(!AssertType(info,i,"valid Float32Array instance",shouldThrowError,[](v8::Local<v8::Value> val){
+        return val->IsFloat32Array();
+    })){
+        return false;
+    }
+    auto contents = Nan::TypedArrayContents<float>(info[i]);
+    out = *contents;
+    len = contents.length();
+    return true;
+}
+
+
+bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, IndexIntType i, std::uint8_t *& out, bool shouldThrowError) {
     if(!AssertType(info,i,"valid Uint8Array instance",shouldThrowError,[](v8::Local<v8::Value> val){
         return val->IsUint8Array();
     })){
@@ -90,12 +115,22 @@ bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, uint32_t i, std::ui
     return true;
 }
 
-bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, uint32_t i, bool & out, bool shouldThrowError) {
+bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, IndexIntType i, bool & out, bool shouldThrowError) {
     if(!AssertType(info,i,"boolean",shouldThrowError,[](v8::Local<v8::Value> val){
         return val->IsInt16Array();
     })){
         return false;
     }
     out = Nan::To<v8::Boolean>(info[i]).ToLocalChecked()->Value();
+    return true;
+}
+
+bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, Arguments::IndexIntType i, int64_t & out, bool shouldThrowError) {
+    if(!AssertType(info,i,"valid signed 64-bit integer",shouldThrowError,[](v8::Local<v8::Value> val){
+        return val->IsNumber();
+    })){
+        return false;
+    }
+    out = Nan::To<v8::Number>(info[i]).ToLocalChecked()->Value();
     return true;
 }

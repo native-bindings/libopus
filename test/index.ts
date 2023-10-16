@@ -1,4 +1,4 @@
-import opus from "..";
+import opus, { OpusFile } from "..";
 import path from "path";
 import { IOptions, aplay, arecord } from "./arecord";
 import { Observable, finalize, lastValueFrom, mergeMap } from "rxjs";
@@ -314,9 +314,37 @@ async function test(fn: () => Promise<unknown>) {
     }
 }
 
+async function testOpusFile() {
+    const of = new OpusFile();
+    of.openFile(path.resolve(__dirname, "sample-3.opus"));
+    const pcm = new Float32Array(2880);
+    assert.strict.equal(of.pcmTell(), 0);
+    assert.strict.deepEqual(of.readFloat(pcm), {
+        sampleCount: 648,
+        linkIndex: 0,
+    });
+    assert.strict.deepEqual(of.pcmTell(), 648);
+    assert.strict.deepEqual(of.readFloat(pcm), {
+        sampleCount: 960,
+        linkIndex: 0,
+    });
+    assert.strict.equal(of.pcmTell(), 1608);
+    assert.strict.equal(of.pcmSeek(0), undefined);
+    assert.strict.equal(of.pcmTell(), 0);
+    assert.strict.deepEqual(of.readFloat(pcm), {
+        sampleCount: 648,
+        linkIndex: 0,
+    });
+    assert.strict.equal(of.channelCount(0), 2);
+    assert.strict.equal(of.channelCount(1), 2);
+    assert.strict.equal(of.linkCount(), 1);
+    assert.strict.equal(of.rawTotal(0), 705632);
+}
+
 // const supportedFrameSizes = [2.5, 10, 20, 40, 60, 80, 100, 120];
 
 (async () => {
+    await test(testOpusFile);
     console.log(chalk.bgWhite(chalk.black("-- starting tests")));
     await test(testRingBuffer);
     await test(function testDecoderTest() {
