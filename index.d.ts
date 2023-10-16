@@ -128,6 +128,25 @@ export class Decoder {
     getInDtx(): number;
 }
 
+export class OpusFile {
+    openFile(filePath: string);
+    readFloat(value: Float32Array): {
+        sampleCount: number;
+        linkIndex: number;
+    };
+    read(value: Int16Array): {
+        sampleCount: number;
+        linkIndex: number;
+    };
+    readFloatStereo(value: Float32Array): number;
+    readStereo(value: Int16Array): number;
+    pcmTell(): number;
+    pcmSeek(offset: number): number;
+    channelCount(li: number): number;
+    rawTotal(li: number): number;
+    linkCount(): number;
+}
+
 export namespace opusenc {
     class Encoder {
         constructor();

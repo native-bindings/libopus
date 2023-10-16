@@ -1,3 +1,4 @@
 opus/**/* filter=lfs diff=lfs merge=lfs -text
 speexdsp-cmake/src/**/* filter=lfs diff=lfs merge=lfs -text
 libopusenc-cmake/src/**/* filter=lfs diff=lfs merge=lfs -text
+opusfile/**/* filter=lfs diff=lfs merge=lfs -text

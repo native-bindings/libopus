@@ -107,3 +107,34 @@ return new Promise<void>((resolve) => {
     });
 });
 ```
+
+## Usage of opusfile
+
+```ts
+import { OpusFile } from "libopus";
+
+const of = new OpusFile();
+of.openFile(path.resolve(__dirname, "sample-3.opus"));
+const pcm = new Float32Array(2880);
+assert.strict.equal(of.pcmTell(), 0);
+assert.strict.deepEqual(of.readFloat(pcm), {
+    sampleCount: 648,
+    linkIndex: 0,
+});
+assert.strict.deepEqual(of.pcmTell(), 648);
+assert.strict.deepEqual(of.readFloat(pcm), {
+    sampleCount: 960,
+    linkIndex: 0,
+});
+assert.strict.equal(of.pcmTell(), 1608);
+assert.strict.equal(of.pcmSeek(0), undefined);
+assert.strict.equal(of.pcmTell(), 0);
+assert.strict.deepEqual(of.readFloat(pcm), {
+    sampleCount: 648,
+    linkIndex: 0,
+});
+assert.strict.equal(of.channelCount(0), 2);
+assert.strict.equal(of.channelCount(1), 2);
+assert.strict.equal(of.linkCount(), 1);
+assert.strict.equal(of.rawTotal(0), 705632);
+```

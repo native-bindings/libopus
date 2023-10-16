@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.0)
 project(opusenc CXX)
 
+set(OP_DISABLE_DOCS true)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_STANDARD 99)
+set(OP_DISABLE_DOCS true)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_compile_options(-Wfatal-errors)
@@ -30,4 +32,5 @@ set_target_properties(
 add_subdirectory(speexdsp-cmake)
 add_subdirectory(libopusenc-cmake)
 add_subdirectory(opus)
+add_subdirectory(opusfile)
 add_subdirectory(src)

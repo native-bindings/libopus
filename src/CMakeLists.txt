@@ -4,6 +4,7 @@ project(NodeOpus CXX)
 set(CMAKE_CXX_STANDARD 17)
 
 add_subdirectory(opusenc)
+add_subdirectory(opusfile)
 
 add_library(
     NodeOpus SHARED
@@ -15,7 +16,7 @@ add_library(
 target_include_directories(
     NodeOpus PRIVATE ${NODE_OPUS_INCLUDE_DIRECTORIES}
 )
-target_link_libraries(NodeOpus PRIVATE libopusenc opus node_addon NodeOpusEnc ${CMAKE_JS_LIB})
+target_link_libraries(NodeOpus PRIVATE libopusenc opus opusfile node_addon NodeOpusFile NodeOpusEnc ${CMAKE_JS_LIB})
 
 if (CMAKE_JS_VERSION)
     set_target_properties(
