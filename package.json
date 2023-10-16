@@ -1,7 +1,7 @@
 {
     "repository": {
         "type": "git",
-        "url": "https://github.com/victorqueiroz/node-opusenc"
+        "url": "git+https://github.com/victorqueiroz/node-opusenc.git"
     },
     "main": "./index.js",
     "files": [
@@ -11,6 +11,8 @@
         "speexdsp-cmake/**/*.{in,txt,cmake,ac,h,c,am,mk}",
         "libopusenc-cmake/**/*.{in,txt,cmake,ac,h,c,am,mk}",
         "opus/**/*.{in,txt,cmake,ac,h,c,am,mk}",
+        "opusfile/**/*.{in,txt,cmake,ac,h,c,am,mk}",
+        "ogg/**/*.{in,txt,cmake,ac,h,c,am,mk}",
         "CMakeLists.txt"
     ],
     "scripts": {
@@ -33,7 +35,7 @@
     ],
     "license": "MIT",
     "name": "libopus",
-    "version": "0.0.40",
+    "version": "0.0.41",
     "devDependencies": {
         "@types/node": "18.x",
         "chalk": "4.x",

@@ -29,6 +29,7 @@ set_target_properties(
     INTERFACE_INCLUDE_DIRECTORIES "${NODE_ADDON_INCLUDE_DIRECTORIES}"
 )
 
+add_subdirectory(ogg)
 add_subdirectory(speexdsp-cmake)
 add_subdirectory(libopusenc-cmake)
 add_subdirectory(opus)
