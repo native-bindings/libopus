@@ -33,7 +33,7 @@
     ],
     "license": "MIT",
     "name": "libopus",
-    "version": "0.0.39",
+    "version": "0.0.40",
     "devDependencies": {
         "@types/node": "18.x",
         "chalk": "4.x",
