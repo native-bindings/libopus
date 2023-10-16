@@ -24,6 +24,7 @@
         "opus",
         "opusenc",
         "libopusenc",
+        "opusfile",
         "audio",
         "libopus",
         "speexdsp",
