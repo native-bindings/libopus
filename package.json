@@ -1,7 +1,7 @@
 {
     "repository": {
         "type": "git",
-        "url": "https://github.com/victorqueiroz/node-opusenc"
+        "url": "git+https://github.com/victorqueiroz/node-opusenc.git"
     },
     "main": "./index.js",
     "files": [
