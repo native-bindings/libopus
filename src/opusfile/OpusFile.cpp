@@ -45,6 +45,7 @@ NAN_METHOD(OpusFile::OpenFile) {
         Nan::ThrowError("Failed to open file");
         return;
     }
+    file->reset();
     file->value = opusFile;
 }
 
@@ -64,6 +65,7 @@ NAN_METHOD(OpusFile::OpenMemory) {
         Nan::ThrowError("Failed to open file");
         return;
     }
+    file->reset();
     file->value = opusFile;
 }
 
@@ -223,6 +225,10 @@ NAN_METHOD(OpusFile::New) {
 }
 
 OpusFile::~OpusFile() {
+    reset();
+}
+
+void OpusFile::reset() {
     if(value) {
         op_free(value);
         value = nullptr;

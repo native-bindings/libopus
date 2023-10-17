@@ -12,7 +12,11 @@ public:
     static void Init(v8::Local<v8::Object> exports);
 private:
     OggOpusFile* value = nullptr;
-    ~OpusFile();
+    /**
+     * free `value` memory and set it to nullptr
+     */
+    void reset();
+    ~OpusFile() override;
     static NAN_METHOD(OpenFile);
     static NAN_METHOD(OpenMemory);
     static NAN_METHOD(New);
