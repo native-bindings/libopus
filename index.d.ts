@@ -130,6 +130,7 @@ export class Decoder {
 
 export class OpusFile {
     openFile(filePath: string);
+    openMemory(data: Uint8Array);
     readFloat(value: Float32Array): {
         sampleCount: number;
         linkIndex: number;

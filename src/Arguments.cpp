@@ -134,3 +134,16 @@ bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, Arguments::IndexInt
     out = Nan::To<v8::Number>(info[i]).ToLocalChecked()->Value();
     return true;
 }
+
+bool Arguments::ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, Arguments::IndexIntType i, uint8_t *& out, size_t &len,
+                             bool shouldThrowError) {
+    if(!AssertType(info,i,"valid Uint8Array instance",shouldThrowError,[](v8::Local<v8::Value> val){
+        return val->IsUint8Array();
+    })){
+        return false;
+    }
+    auto contents = Nan::TypedArrayContents<std::uint8_t>(info[i]);
+    out = *contents;
+    len = contents.length();
+    return true;
+}

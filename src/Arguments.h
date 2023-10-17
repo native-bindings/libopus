@@ -28,6 +28,7 @@ struct Arguments {
     static bool ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, IndexIntType i, std::int16_t*&, bool shouldThrowError = true);
     static bool ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, IndexIntType i, std::int16_t*&, size_t& len, bool shouldThrowError = true);
     static bool ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, IndexIntType i, std::uint8_t*&, bool shouldThrowError = true);
+    static bool ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, IndexIntType i, std::uint8_t*&, size_t& len, bool shouldThrowError = true);
     static bool ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, IndexIntType i, bool&, bool shouldThrowError = true);
     static bool ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, IndexIntType i, float*&, bool shouldThrowError = true);
     static bool ConvertValue(Nan::NAN_METHOD_ARGS_TYPE info, IndexIntType i, float*&, size_t& len, bool shouldThrowError = true);

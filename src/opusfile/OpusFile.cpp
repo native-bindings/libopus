@@ -13,6 +13,7 @@ void OpusFile::Init(v8::Local<v8::Object> exports) {
     tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
     Nan::SetPrototypeMethod(tpl, "openFile", OpenFile);
+    Nan::SetPrototypeMethod(tpl, "openMemory", OpenMemory);
     Nan::SetPrototypeMethod(tpl, "read", Read);
     Nan::SetPrototypeMethod(tpl, "readStereo", ReadStereo);
     Nan::SetPrototypeMethod(tpl, "readFloat", ReadFloat);
@@ -40,6 +41,25 @@ NAN_METHOD(OpusFile::OpenFile) {
     }
     int err;
     auto opusFile = op_open_file(filePath.c_str(), &err);
+    if(err != 0 || opusFile == nullptr){
+        Nan::ThrowError("Failed to open file");
+        return;
+    }
+    file->value = opusFile;
+}
+
+NAN_METHOD(OpusFile::OpenMemory) {
+    OpusFile* file;
+    if(!Arguments::Unwrap(info.This(), file, "OpusFile")) {
+        return;
+    }
+    std::uint8_t* data;
+    size_t size;
+    if(!Arguments::ConvertValue(info, 0, data, size)) {
+        return;
+    }
+    int err;
+    auto opusFile = op_open_memory(data, size, &err);
     if(err != 0 || opusFile == nullptr){
         Nan::ThrowError("Failed to open file");
         return;

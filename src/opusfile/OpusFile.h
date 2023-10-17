@@ -14,6 +14,7 @@ private:
     OggOpusFile* value = nullptr;
     ~OpusFile();
     static NAN_METHOD(OpenFile);
+    static NAN_METHOD(OpenMemory);
     static NAN_METHOD(New);
     static NAN_METHOD(ChannelCount);
     static NAN_METHOD(LinkCount);
