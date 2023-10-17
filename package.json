@@ -8,11 +8,11 @@
         "src/**/*.{cpp,h}",
         "*.{js,cpp,c,h,d.ts}",
         "!test/*.ogg",
-        "speexdsp-cmake/**/*.{in,txt,cmake,ac,h,c,am,mk}",
-        "libopusenc-cmake/**/*.{in,txt,cmake,ac,h,c,am,mk}",
-        "opus/**/*.{in,txt,cmake,ac,h,c,am,mk}",
-        "opusfile/**/*.{in,txt,cmake,ac,h,c,am,mk}",
-        "ogg/**/*.{in,txt,cmake,ac,h,c,am,mk}",
+        "speexdsp-cmake",
+        "libopusenc-cmake",
+        "opus",
+        "opusfile",
+        "ogg",
         "CMakeLists.txt"
     ],
     "scripts": {
