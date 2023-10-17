@@ -138,3 +138,12 @@ assert.strict.equal(of.channelCount(1), 2);
 assert.strict.equal(of.linkCount(), 1);
 assert.strict.equal(of.rawTotal(0), 705632);
 ```
+
+You can also open the file from memory:
+
+```ts
+import { OpusFile } from "libopus";
+
+const of = new OpusFile();
+of.openMemory(await fs.promises.readFile("./sample.opus"));
+```
