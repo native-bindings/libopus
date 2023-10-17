@@ -10,3 +10,6 @@
 /.DS_Store
 /yarn-error.log
 /.vscode
+/scripts/debian-*
+/scripts/ubuntu-*
+/scripts/tested_on.txt

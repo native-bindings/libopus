@@ -38,11 +38,17 @@
     "version": "1.0.1",
     "devDependencies": {
         "@types/node": "18.x",
+        "@types/node-fetch": "^2.6.6",
+        "@types/semver": "^7.5.3",
         "chalk": "4.x",
+        "child-process-utilities": "^0.0.10",
         "codestreamjs": "^0.0.1",
         "glob": "9.x",
+        "node-fetch": "^2.7.0",
         "prettier": "2.x",
         "rxjs": "7.x",
+        "semver": "^7.5.4",
+        "textstreamjs": "^0.0.4",
         "ts-node": "10.x",
         "typescript": "^5.2.2"
     },
