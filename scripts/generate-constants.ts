@@ -528,7 +528,7 @@ export class ConstantsCodeGenerator extends CodeStream {
     }
     async #generateTypeScriptConstantsFile() {
         this.write(
-            "const constants: {\n",
+            "declare const constants: {\n",
             () => {
                 for (const m of this.#allMacros) {
                     if (m.type !== "valueMacro") {

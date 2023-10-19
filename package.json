@@ -5,22 +5,24 @@
     },
     "main": "./index.js",
     "files": [
-        "src/**/*.{cpp,h}",
-        "*.{js,cpp,c,h,d.ts}",
-        "!test/*.ogg",
-        "speexdsp-cmake",
-        "libopusenc-cmake",
-        "opus",
-        "opusfile",
-        "ogg",
-        "CMakeLists.txt"
+        "index.d.ts",
+        "index.js",
+        "CMakeLists.txt",
+        "src/**/*.{mk,am,ac,cc,c,cpp,in,h,hpp,txt,cmake}",
+        "speexdsp-cmake/**/*.{mk,am,ac,cc,c,cpp,in,h,hpp,txt,cmake}",
+        "libopusenc-cmake/**/*.{mk,am,ac,cc,c,cpp,in,h,hpp,txt,cmake}",
+        "opus/**/*.{mk,am,ac,cc,c,cpp,in,h,hpp,txt,cmake}",
+        "opusfile/**/*.{mk,am,ac,cc,c,cpp,in,h,hpp,txt,cmake}",
+        "ogg/**/*.{mk,am,ac,cc,c,cpp,in,h,hpp,txt,cmake}",
+        "{opus,opusfile}/package_version"
     ],
     "scripts": {
         "test": "npx ts-node test",
         "compile:debug": "npm run compile -- -D",
         "compile": "npx cmake-js compile -C",
+        "test:docker": "npx ts-node scripts/test-using-docker.ts",
         "prepublishOnly": "npx ts-node scripts/generate-constants.ts && npm run postinstall && npm test",
-        "postinstall": "npx cmake-js compile -C"
+        "postinstall": "npm run compile"
     },
     "keywords": [
         "opus",

@@ -2,14 +2,7 @@
 /build
 /cmake-build-*
 /.idea
-*.js
-*.d.ts
-!index.js
-!index.d.ts
 /.cache
 /.DS_Store
 /yarn-error.log
 /.vscode
-/scripts/debian-*
-/scripts/ubuntu-*
-/scripts/tested_on.txt
