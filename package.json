@@ -37,7 +37,7 @@
     ],
     "license": "MIT",
     "name": "libopus",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "devDependencies": {
         "@types/node": "18.x",
         "@types/node-fetch": "^2.6.6",
