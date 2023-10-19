@@ -164,7 +164,12 @@ export namespace opusenc {
          * Create a new OggOpus stream to be used along with.ope_encoder_get_page().
          * This is mostly useful for muxing with other streams.
          */
-        createPull(rate: number, channels: number, family: number): void;
+        createPull(
+            comments: Comments,
+            rate: number,
+            channels: number,
+            family: number
+        ): void;
         // Add/encode any number of float samples to the file.
         writeFloat(value: Float32Array, samples: number): void;
         // Add/encode any number of int16 samples to the file.

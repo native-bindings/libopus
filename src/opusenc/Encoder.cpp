@@ -53,8 +53,8 @@ NAN_METHOD(Encoder::CreatePull){
         !Arguments::Unwrap<Encoder>(info.This(), enc) ||
         !Arguments::Unwrap<Comments>(info[0], comments) ||
         !Arguments::ConvertValue(info, 1, rate) ||
-        !Arguments::ConvertValue(info, 1, channels) ||
-        !Arguments::ConvertValue(info, 2, family)
+        !Arguments::ConvertValue(info, 2, channels) ||
+        !Arguments::ConvertValue(info, 3, family)
     ){
         return;
     }
