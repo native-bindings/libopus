@@ -1,4 +1,4 @@
-import Exception from "../test/Exception";
+import Exception from "./Exception";
 
 export function lowerFirst(value: string) {
     return `${value[0]?.toLowerCase()}${value.substring(1)}`;
