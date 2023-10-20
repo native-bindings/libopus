@@ -29,6 +29,7 @@ private:
     static NAN_METHOD(ReadFloat);
     static NAN_METHOD(ReadFloatStereo);
     static NAN_METHOD(PcmTell);
+    static NAN_METHOD(PcmTotal);
     static NAN_METHOD(PcmSeek);
 };
 

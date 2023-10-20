@@ -142,6 +142,19 @@ export class OpusFile {
     readFloatStereo(value: Float32Array): number;
     readStereo(value: Int16Array): number;
     pcmTell(): number;
+
+    /**
+     * Get the total PCM length (number of samples at 48 kHz) of the stream, or of
+     * an individual link in a (possibly-chained) Ogg Opus stream.
+     * Users looking for <code>op_time_total()</code> should use op_pcm_total()
+     * instead.
+     * Because timestamps in Opus are fixed at 48 kHz, there is no need for a
+     * separate function to convert this to seconds (and leaving it out avoids
+     * introducing floating point to the API, for those that wish to avoid it).
+     * @param li The index of the link whose PCM length should be computed. Use a negative number to get the PCM length of the entire stream.
+     * @returns The PCM length of the entire stream if @param li is negative, the PCM length of link @param li if it is non-negative
+     */
+    pcmTotal(li: number): number;
     pcmSeek(offset: number): number;
     channelCount(li: number): number;
     rawTotal(li: number): number;

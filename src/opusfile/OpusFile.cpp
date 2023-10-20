@@ -22,6 +22,7 @@ void OpusFile::Init(v8::Local<v8::Object> exports) {
     Nan::SetPrototypeMethod(tpl, "linkCount", LinkCount);
     Nan::SetPrototypeMethod(tpl, "currentLink", CurrentLink);
     Nan::SetPrototypeMethod(tpl, "rawTotal", RawTotal);
+    Nan::SetPrototypeMethod(tpl, "pcmTotal", PcmTotal);
     Nan::SetPrototypeMethod(tpl, "pcmTell", PcmTell);
     Nan::SetPrototypeMethod(tpl, "pcmSeek", PcmSeek);
 
@@ -216,6 +217,23 @@ NAN_METHOD(OpusFile::PcmSeek) {
         Nan::ThrowError("op_pcm_seek returned a failure");
         return;
     }
+}
+
+NAN_METHOD(OpusFile::PcmTotal) {
+    OpusFile* file;
+    if(!Arguments::Unwrap(info.This(), file, "OpusFile")) {
+        return;
+    }
+    int li;
+    if(!Arguments::ConvertValue(info, 0, li)) {
+        return;
+    }
+    auto result = op_pcm_total(file->value, li);
+    if(result < 0) {
+        Nan::ThrowError("op_pcm_total returned a failure");
+        return;
+    }
+    info.GetReturnValue().Set(Nan::New<v8::Number>(result));
 }
 
 NAN_METHOD(OpusFile::New) {
