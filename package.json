@@ -17,7 +17,7 @@
         "{opus,opusfile}/package_version"
     ],
     "scripts": {
-        "test": "npx ts-node test",
+        "test": "npx ava test/index.ts",
         "compile:debug": "npm run compile -- -D",
         "compile": "npx cmake-js compile -C",
         "test:docker": "npx ts-node scripts/test-using-docker.ts",
