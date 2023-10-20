@@ -572,7 +572,7 @@ export class ConstantsCodeGenerator extends CodeStream {
     await new ConstantsCodeGenerator(macros).generate();
 })().catch((reason) => {
     if (reason instanceof Exception) {
-        console.error(reason.what());
+        console.error(reason.what);
     } else {
         console.error(reason);
     }
