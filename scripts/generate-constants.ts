@@ -7,7 +7,7 @@ import {
     lowerFirst,
 } from "./helpers";
 import MacroReader, { MacroDefinition } from "./MacroReader";
-import Exception from "../test/Exception";
+import Exception from "./Exception";
 
 interface IEnum {
     args: {
