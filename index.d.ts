@@ -201,7 +201,7 @@ export namespace opusenc {
             coupled_streams: number,
             mapping: Uint8Array
         ): void;
-        getPage(flush: boolean): Uint8Array;
+        getPage(flush: boolean): Uint8Array | null;
         chainCurrent(comments: Comments): void;
         /**
          * get information

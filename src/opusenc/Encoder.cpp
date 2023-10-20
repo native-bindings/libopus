@@ -6,12 +6,28 @@ using namespace bindings::opusenc;
 
 Nan::Persistent<v8::Function> Encoder::constructor;
 
+static bool ValidateFamily(int family) {
+    if(family != 0 && family != 1) {
+        Nan::ThrowError(Nan::New(std::string("Expected family argument to be 0 for mono or 1 for stereo, but got " ) + std::to_string(family) + " instead").ToLocalChecked());
+        return false;
+    }
+    return true;
+}
+
 static bool AssertNotCreatedEncoder(Encoder* enc){
     if(enc->value){
         Nan::ThrowError("Encoder was already created previously");
         return false;
     }
     return true;
+}
+
+bool Encoder::HasError(std::string&& prefix) const {
+    if(error != OPE_OK){
+        Nan::ThrowError(Nan::New(prefix + " with error: " + ope_strerror(error)).ToLocalChecked());
+        return true;
+    }
+    return false;
 }
 
 void Encoder::Init(v8::Local<v8::Object> exports) {
@@ -58,11 +74,13 @@ NAN_METHOD(Encoder::CreatePull){
     ){
         return;
     }
-    enc->value = ope_encoder_create_pull(comments->value, rate, channels, family, &enc->error);
-    if(enc->error != OPE_OK) {
-        Nan::ThrowError("Failed to create encoder");
+    if(!ValidateFamily(family)){
+        return;
     }
-
+    enc->value = ope_encoder_create_pull(comments->value, rate, channels, family, &enc->error);
+    if(enc->HasError("Failed to create encoder")) {
+        return;
+    }
 }
 
 NAN_METHOD(Encoder::CreateFile){
@@ -85,10 +103,12 @@ NAN_METHOD(Encoder::CreateFile){
     ){
         return;
     }
+    if(!ValidateFamily(family)){
+        return;
+    }
     enc->value = ope_encoder_create_file(file.c_str(),comments->value,rate,channels,family,&enc->error);
-    if(enc->error){
-        enc->value = nullptr;
-        Nan::ThrowError("Failed to create direct-file encoder");
+    if(enc->HasError("Failed to create direct-file encoder")) {
+        return;
     }
 }
 
@@ -97,10 +117,10 @@ NAN_METHOD(Encoder::Drain){
     if(!Arguments::Unwrap<Encoder>(info.This(), enc)){
         return;
     }
-    if(ope_encoder_drain(enc->value) != OPE_OK){
-        Nan::ThrowError("Failed to drain encoder");
+    enc->error = ope_encoder_drain(enc->value);
+    if(enc->HasError("Failed to drain encoder")) {
+        return;
     }
-
 }
 
 NAN_METHOD(Encoder::ChainCurrent){
@@ -112,8 +132,9 @@ NAN_METHOD(Encoder::ChainCurrent){
     ) {
         return;
     }
-    if(ope_encoder_chain_current(enc->value,comments->value) != OPE_OK){
-        Nan::ThrowError("Failed to chain current");
+    enc->error = ope_encoder_chain_current(enc->value,comments->value);
+    if(enc->HasError("Failed to chain current")){
+        return;
     }
 }
 
@@ -123,8 +144,8 @@ NAN_METHOD(Encoder::FlushHeader) {
         return;
     }
     enc->error = ope_encoder_flush_header(enc->value);
-    if(enc->error != OPE_OK){
-        Nan::ThrowError(Nan::New("Failed to flush header with error: " + std::string(ope_strerror(enc->error))).ToLocalChecked());
+    if(enc->HasError("Failed to flush header")) {
+        return;
     }
 }
 
@@ -139,10 +160,10 @@ NAN_METHOD(Encoder::Write){
     ){
         return;
     }
-    if(ope_encoder_write(enc->value, pcm, samplesPerChannel) != OPE_OK){
-        Nan::ThrowError("Failed to write to encoder");
+    enc->error = ope_encoder_write(enc->value, pcm, samplesPerChannel);
+    if(enc->HasError("Failed to write to encoder")){
+        return;
     }
-
 }
 
 NAN_METHOD(Encoder::DeferredInitWithMapping) {
@@ -159,8 +180,9 @@ NAN_METHOD(Encoder::DeferredInitWithMapping) {
         Nan::ThrowError("First, second and third arguments must be valid integers");
         return;
     }
-    if(ope_encoder_deferred_init_with_mapping(enc->value,family,streams,coupled_streams,mapping) != OPE_OK){
-        Nan::ThrowError("ope_encoder_deferred_init_with_mapping call returned a failure");
+    enc->error = ope_encoder_deferred_init_with_mapping(enc->value,family,streams,coupled_streams,mapping);
+    if(enc->HasError("ope_encoder_deferred_init_with_mapping call failed")) {
+        return;
     }
 }
 
@@ -175,11 +197,11 @@ NAN_METHOD(Encoder::ContinueNewFile){
     ){
         return;
     }
-    if(ope_encoder_continue_new_file(enc->value, path.c_str(), comments->value) != OPE_OK){
-        Nan::ThrowError("Failed to continue new file");
+    enc->error = ope_encoder_continue_new_file(enc->value, path.c_str(), comments->value);
+    if(enc->HasError("Failed to continue with new file")) {
+        return;
     }
 }
-
 
 NAN_METHOD(Encoder::GetPage) {
     Encoder* enc;
@@ -192,8 +214,15 @@ NAN_METHOD(Encoder::GetPage) {
     if(!Arguments::ConvertValue(info, 0,flush, false)){
         flush = false;
     }
-    if(ope_encoder_get_page(enc->value,&page,&len,flush ? 1 : 0) != OPE_OK){
-        Nan::ThrowError("Failed to get page");
+
+    const auto hasPage = ope_encoder_get_page(enc->value, &page, &len, flush ? 1 : 0);
+
+    if(hasPage == 1) {
+        char copy[len];
+        memcpy(copy, page, len);
+        info.GetReturnValue().Set(Nan::CopyBuffer(copy, len).ToLocalChecked());
+    } else if(hasPage == 0) {
+        info.GetReturnValue().Set(Nan::Null());
     }
 }
 
@@ -209,15 +238,14 @@ NAN_METHOD(Encoder::WriteFloat){
         return;
     }
     enc->error = ope_encoder_write_float(enc->value, pcm, samplesPerChannel);
-    if(enc->error != OPE_OK){
-        Nan::ThrowError("Failed to write to encoder with error");
+    if(enc->HasError("Failed to write to encoder")){
+        return;
     }
 }
 
-Encoder::Encoder() {
-
-}
-
 Encoder::~Encoder() {
-    ope_encoder_destroy(value);
+    if(value) {
+        ope_encoder_destroy(value);
+        value = nullptr;
+    }
 }

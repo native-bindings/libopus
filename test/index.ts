@@ -1,365 +1,156 @@
 import opus, { OpusFile } from "..";
 import path from "path";
-import { IOptions, aplay, arecord } from "./arecord";
-import { Observable, finalize, lastValueFrom, mergeMap } from "rxjs";
-import RingBuffer, { ITypedArray } from "./RingBuffer";
-// import inspector from "inspector";
-// import { ChildProcessWithoutNullStreams } from "child_process";
-import assert from "assert";
-import Exception from "./Exception";
-import { Writable } from "stream";
-import crypto from "crypto";
-import inspector from "inspector";
-import chalk from "chalk";
-import { Converter } from "./helpers";
+import fs from "fs";
+import test from "ava";
+import { concatMap, from, map, of, range, throwError } from "rxjs";
 
-if (process.argv.includes("--inspect")) {
-    inspector.open(undefined, undefined, true);
+async function stream(pcmFile: string, frameSize: number) {
+    const fd = await fs.promises.open(pcmFile);
+    const pcm = new Uint8Array(frameSize * Float32Array.BYTES_PER_ELEMENT);
+    const totalFileSize = (await fd.stat()).size;
+    const partSize = frameSize * Float32Array.BYTES_PER_ELEMENT;
+    const parts = Math.ceil(totalFileSize / partSize);
+    return range(0, parts).pipe(
+        concatMap((part) => {
+            const offset = part * partSize;
+            return from(fd.read(pcm, 0, pcm.length, offset)).pipe(
+                concatMap((result) => {
+                    if (result.bytesRead > 0) {
+                        return of(result);
+                    }
+                    return throwError(() => new Error("EOF"));
+                }),
+                map((result) => new Float32Array(result.buffer.buffer))
+            );
+        })
+    );
 }
 
-async function testOpusCodec() {
-    const sampleRate = 48000;
-    const channels = 1;
+test("opus/Encoder", async (t) => {
     const enc = new opus.Encoder(
-        sampleRate,
+        48000,
         1,
-        opus.constants.OPUS_APPLICATION_RESTRICTED_LOWDELAY
+        opus.constants.OPUS_APPLICATION_VOIP
     );
-    /**
-     * frame size in samples
-     */
-    const frameSize = 2880;
-    // const bufferSize = frameSize * Float32Array.BYTES_PER_ELEMENT;
-    const dec = new opus.Decoder(sampleRate, 1);
-    const options: IOptions = {
-        format: "FLOAT_LE",
-        channels: 1,
-        sampleRate,
-    };
-    const pcm = arecord({
-        ...options,
-        duration: 4,
-    });
-    const encoded = new Uint8Array(10000);
-    const pcmOut = new Float32Array(frameSize * channels);
-    const player = aplay({
-        format: "FLOAT_LE",
-        channels: 1,
-        sampleRate,
-    });
-    pcm.subscribe((chunk) => {
-        const samples = chunk.byteLength / Float32Array.BYTES_PER_ELEMENT;
-        const buf = new Float32Array(samples);
-        buf.set(new Float32Array(chunk.buffer, chunk.byteOffset, samples));
-
-        const encodedSampleCount = enc.encodeFloat(
-            buf,
-            frameSize,
-            encoded,
-            1000
-        );
-
-        const decodedSamples = dec.decodeFloat(
-            encoded,
-            encodedSampleCount,
-            pcmOut,
-            frameSize,
-            0
-        );
-
-        player.stdin.write(
-            new Uint8Array(pcmOut.slice(0, decodedSamples).buffer)
-        );
-    });
-    return lastValueFrom(pcm).then(() => {
-        player.stdin.end();
-    });
-}
-
-async function createFile() {
-    const comments = new opus.opusenc.Comments();
-    const enc = new opus.opusenc.Encoder();
-    enc.createFile(comments, path.resolve(__dirname, "test1.ogg"), 48000, 1, 0);
-    const pcm = arecord({
-        sampleRate: 48000,
-        duration: 4,
-        channels: 1,
-        format: "FLOAT_LE",
-    });
-    pcm.subscribe((chunk) => {
-        const samples = chunk.byteLength / Float32Array.BYTES_PER_ELEMENT;
-        const buf = new Float32Array(samples);
-        buf.set(new Float32Array(chunk.buffer, chunk.byteOffset, samples));
-
-        enc.writeFloat(buf, samples);
-    });
-    return lastValueFrom(pcm);
-}
-
-async function testDecoder({
-    frameSize,
-    sampleRate,
-}: {
-    sampleRate: number;
-    frameSize: number;
-}) {
-    const channelCount = 1;
-    const encoder = new opus.Encoder(
-        sampleRate,
-        channelCount,
-        opus.constants.OPUS_APPLICATION_AUDIO
+    const opusFrames = (
+        await stream(path.resolve(__dirname, "f32le_48000_1_10.bin"), 2880)
+    ).pipe(
+        map((samples) => {
+            const length = enc.encodeFloat(samples, 2880, out, out.byteLength);
+            return out.slice(0, length);
+        })
     );
-    const encoded = new Uint8Array(1024 * 1024 * 2);
-    const converter = new Converter(sampleRate);
-    const decoder = new opus.Decoder(sampleRate, channelCount);
-    const sampleCount =
-        converter.frameSizeToByteLength(frameSize) /
-        Int16Array.BYTES_PER_ELEMENT;
-    const outPcm = new Int16Array(sampleCount * channelCount);
-    const aplayFrameSize = 300;
-    const options: IOptions = {
-        format: "S16_LE",
-        sampleRate,
-        channels: channelCount,
-    };
-    const player = aplay({
-        ...options,
-        bufferSize: aplayFrameSize,
-    });
 
-    encoder.setBitrate(48000);
+    const out = new Uint8Array(1024 * 1024 * 2);
 
-    console.log("sample count is: %d", sampleCount);
+    const decoder = new opus.Decoder(48000, 1);
 
-    const ob = arecord({
-        ...options,
-        duration: 4,
-    })
-        .pipe(
-            mergeMap(
-                createRingBufferIterator(
-                    new RingBuffer(sampleCount, Int16Array)
-                )
-            )
-        )
-        .pipe(
-            mergeMap(
-                encodeAsync({
-                    encoder: encoder,
-                    out: encoded,
-                    sampleCount,
-                }),
-                1
-            )
-        )
-        .pipe(
-            mergeMap(
-                decodeAsync({
-                    decoder,
-                    outPcm,
-                    sampleCount,
-                }),
-                1
-            )
-        )
-        .pipe(
-            mergeMap(
-                createRingBufferIterator(
-                    new RingBuffer(aplayFrameSize, Uint8Array)
-                )
-            )
-        )
-        .pipe(mergeMap(sendToWritable(player.stdin), 1))
-        .pipe(
-            finalize(() => {
-                player.stdin.end();
-            })
-        );
-
-    return lastValueFrom(ob);
-}
-
-function sendToWritable(stream: Writable) {
-    let maxByteLength = 0;
-    return <T extends ITypedArray<T>>(pcm: T) =>
-        new Observable<T>((s) => {
-            const copy = Buffer.allocUnsafe(pcm.byteLength);
-            copy.set(Buffer.from(pcm.buffer, pcm.byteOffset, pcm.byteLength));
-            if (pcm.byteLength > maxByteLength) {
-                console.log(
-                    "bytes = %d, sample count = %d",
-                    pcm.byteLength,
-                    pcm.length
-                );
-                maxByteLength = pcm.byteLength;
-            }
-            const result = stream.write(copy, (err) => {
-                if (err) {
-                    s.error(err);
-                } else {
-                    s.next(pcm);
-                    s.complete();
-                }
-            });
-            assert.strict.ok(result);
-        });
-}
-
-function createRingBufferIterator<T extends ITypedArray<T>>(
-    ringBuffer: RingBuffer<T>
-) {
-    return (buffer: ITypedArray<unknown>) => {
-        return new Observable<T>((s) => {
-            ringBuffer.write(buffer);
-            let inPcm: T | null = null;
-            do {
-                inPcm = ringBuffer.read();
-                if (inPcm !== null) {
-                    s.next(inPcm);
-                }
-            } while (inPcm !== null);
-            s.complete();
-        });
-    };
-}
-
-function encodeAsync({
-    encoder,
-    out,
-    sampleCount,
-}: {
-    encoder: opus.Encoder;
-    out: Uint8Array;
-    sampleCount: number;
-}) {
-    return (pcm: Int16Array) =>
-        new Observable<Uint8Array>((s) => {
-            encoder.encodeAsync(
-                pcm,
-                sampleCount,
+    const sub = opusFrames.subscribe({
+        next(opusFrame) {
+            const out = new Float32Array(2880);
+            const decoded = decoder.decodeFloat(
+                opusFrame,
+                opusFrame.byteLength,
                 out,
-                out.byteLength,
-                (result) => {
-                    if (typeof result === "string") {
-                        s.error(`Failed to encode ${pcm.length}: ${result}`);
-                    } else {
-                        s.next(
-                            out.subarray(
-                                0,
-                                result / Uint8Array.BYTES_PER_ELEMENT
-                            )
-                        );
-                        s.complete();
-                    }
-                }
+                2880,
+                0
             );
-        });
-}
 
-function decodeAsync({
-    decoder,
-    outPcm,
-    sampleCount,
-}: {
-    decoder: opus.Decoder;
-    outPcm: Int16Array;
-    sampleCount: number;
-}) {
-    return (encoded: Uint8Array) =>
-        new Observable<Int16Array>((s) => {
-            decoder.decodeAsync(
-                encoded,
-                encoded.byteLength,
-                outPcm,
-                sampleCount,
-                0,
-                (sampleCount) => {
-                    if (typeof sampleCount === "string") {
-                        s.error(
-                            `Failed to decode ${encoded.byteLength} bytes with error: ${sampleCount}`
-                        );
-                    } else {
-                        s.next(outPcm.subarray(0, sampleCount));
-                        s.complete();
-                    }
-                }
-            );
-        });
-}
+            t.deepEqual(decoded, 2880);
+        },
+    });
 
-async function testRingBuffer() {
-    const a1 = crypto.randomFillSync(new Int16Array(2800));
-    const rb = new RingBuffer(2880, Int16Array);
-    for (let i = 0; i < 100; i++) {
-        rb.write(a1);
-        assert.strict.equal(rb.read(), null);
-        rb.write(new Int16Array(80));
-        const givenResult = rb.read();
-        const expectedResult = new Int16Array([...a1, ...new Int16Array(80)]);
-        assert.strict.deepEqual(givenResult, expectedResult);
-    }
-}
+    return new Promise((resolve) =>
+        sub.add(() => {
+            resolve();
+        })
+    );
+});
 
-async function test(fn: () => Promise<unknown>) {
-    try {
-        await fn();
-        console.log("-- %s:", fn.name);
-        console.log(chalk.green("\tsucceeded"));
-    } catch (reason) {
-        console.log(chalk.red("failed\n"));
-        console.error(reason);
-        throw new Exception("Test failed");
-    } finally {
-        console.log();
-    }
-}
-
-async function testOpusFile() {
+test("opusfile/OpusFile/openFile", (t) => {
     const of = new OpusFile();
     of.openFile(path.resolve(__dirname, "sample-3.opus"));
     const pcm = new Float32Array(2880);
-    assert.strict.equal(of.pcmTell(), 0);
-    assert.strict.deepEqual(of.readFloat(pcm), {
+    t.deepEqual(of.pcmTell(), 0);
+    t.deepEqual(of.readFloat(pcm), {
         sampleCount: 648,
         linkIndex: 0,
     });
-    assert.strict.deepEqual(of.pcmTell(), 648);
-    assert.strict.deepEqual(of.readFloat(pcm), {
+    t.deepEqual(of.pcmTell(), 648);
+    t.deepEqual(of.readFloat(pcm), {
         sampleCount: 960,
         linkIndex: 0,
     });
-    assert.strict.equal(of.pcmTell(), 1608);
-    assert.strict.equal(of.pcmSeek(0), undefined);
-    assert.strict.equal(of.pcmTell(), 0);
-    assert.strict.deepEqual(of.readFloat(pcm), {
+    t.deepEqual(of.pcmTell(), 1608);
+    t.deepEqual(of.pcmSeek(0), undefined);
+    t.deepEqual(of.pcmTell(), 0);
+    t.deepEqual(of.readFloat(pcm), {
         sampleCount: 648,
         linkIndex: 0,
     });
-    assert.strict.equal(of.channelCount(0), 2);
-    assert.strict.equal(of.channelCount(1), 2);
-    assert.strict.equal(of.linkCount(), 1);
-    assert.strict.equal(of.rawTotal(0), 705632);
-}
+    t.deepEqual(of.channelCount(0), 2);
+    t.deepEqual(of.channelCount(1), 2);
+    t.deepEqual(of.linkCount(), 1);
+    t.deepEqual(of.rawTotal(0), 705632);
+});
 
-// const supportedFrameSizes = [2.5, 10, 20, 40, 60, 80, 100, 120];
-
-(async () => {
-    await test(testOpusFile);
-    console.log(chalk.bgWhite(chalk.black("-- starting tests")));
-    await test(testRingBuffer);
-    await test(function testDecoderTest() {
-        return testDecoder({
-            frameSize: 120,
-            sampleRate: 48000,
-        });
-    });
-    await test(testOpusCodec);
-    await test(createFile);
-})().catch((reason) => {
-    if (reason instanceof Exception) {
-        console.error(reason.what());
-    } else {
-        console.error(reason);
+test("opusenc/Encoder/createPull", async (t) => {
+    const enc = new opus.opusenc.Encoder();
+    const comments = new opus.opusenc.Comments();
+    enc.createPull(comments, 48000, 1, 0);
+    const duration = 4;
+    const fd = await fs.promises.open(
+        path.resolve(__dirname, "f32le_48000_1_10.bin")
+    );
+    const opusFile = new Array<Uint8Array>();
+    const totalFileSize = (await fd.stat()).size;
+    const totalSampleCount = totalFileSize / Float32Array.BYTES_PER_ELEMENT;
+    const frameSize = totalSampleCount / (duration * 32);
+    const readPages = async (flush: boolean) => {
+        let page = enc.getPage(flush);
+        do {
+            if (page !== null) {
+                opusFile.push(page);
+            }
+            page = enc.getPage(flush);
+        } while (page !== null);
+    };
+    const partSize = frameSize * Float32Array.BYTES_PER_ELEMENT;
+    const parts = Math.ceil(totalFileSize / partSize);
+    const pcm = new Uint8Array(frameSize * Float32Array.BYTES_PER_ELEMENT);
+    for (let i = 0; i < parts; i++) {
+        const offset = i * partSize;
+        const result = await fd.read(pcm, 0, pcm.length, offset);
+        t.assert(result.bytesRead > 0);
+        const samples = new Float32Array(result.buffer.buffer);
+        enc.writeFloat(samples, samples.length);
+        await readPages(false);
     }
-    process.exitCode = 1;
+    enc.drain();
+    await readPages(true);
+    await fd.close();
+
+    /**
+     * test the generated opus file
+     */
+    const of = new OpusFile();
+    const frame = new Float32Array(48000);
+    of.openMemory(Buffer.concat(opusFile));
+    t.deepEqual(of.pcmTotal(-1), 480000);
+    t.deepEqual(of.pcmTell(), 0);
+    t.deepEqual(of.readFloat(frame), {
+        sampleCount: 648,
+        linkIndex: 0,
+    });
+    t.deepEqual(of.pcmTell(), 648);
+    t.deepEqual(of.readFloat(frame), {
+        sampleCount: 960,
+        linkIndex: 0,
+    });
+    t.deepEqual(of.pcmTell(), 1608);
+    t.deepEqual(of.readFloat(frame), {
+        sampleCount: 960,
+        linkIndex: 0,
+    });
+    t.deepEqual(of.pcmTell(), 2568);
 });

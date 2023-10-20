@@ -13,10 +13,7 @@ add_library(
     Constants.cpp Constants.h Decoder.cpp Decoder.h
     EncoderGettersAndSetters.cpp
 )
-target_include_directories(
-    NodeOpus PRIVATE ${NODE_OPUS_INCLUDE_DIRECTORIES}
-)
-target_link_libraries(NodeOpus PRIVATE libopusenc opus opusfile node_addon NodeOpusFile NodeOpusEnc ${CMAKE_JS_LIB})
+target_link_libraries(NodeOpus PRIVATE opusfile libopusenc node_addon opus NodeOpusFile NodeOpusEnc)
 
 if (CMAKE_JS_VERSION)
     set_target_properties(

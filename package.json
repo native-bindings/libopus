@@ -24,6 +24,14 @@
         "prepublishOnly": "npx ts-node scripts/generate-constants.ts && npm run postinstall && npm test",
         "postinstall": "npm run compile"
     },
+    "ava": {
+        "extensions": {
+            "ts": "module"
+        },
+        "nodeArguments": [
+            "--loader=tsx"
+        ]
+    },
     "keywords": [
         "opus",
         "opusenc",
@@ -39,19 +47,24 @@
     "name": "libopus",
     "version": "1.0.2",
     "devDependencies": {
-        "@types/node": "18.x",
+        "@types/node": "^18.18.6",
         "@types/node-fetch": "^2.6.6",
         "@types/semver": "^7.5.3",
+        "ava": "^5.3.1",
+        "c8": "^8.0.1",
         "chalk": "4.x",
         "child-process-utilities": "^0.0.10",
         "codestreamjs": "^0.0.1",
+        "esmock": "^2.5.6",
         "glob": "9.x",
         "node-fetch": "^2.7.0",
         "prettier": "2.x",
+        "ringbud": "^1.0.11",
         "rxjs": "7.x",
         "semver": "^7.5.4",
         "textstreamjs": "^0.0.4",
-        "ts-node": "10.x",
+        "ts-node": "^10.9.1",
+        "tsx": "^3.14.0",
         "typescript": "^5.2.2"
     },
     "dependencies": {

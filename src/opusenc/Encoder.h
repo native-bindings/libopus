@@ -10,13 +10,13 @@ namespace bindings::opusenc {
 
 class Encoder : public Nan::ObjectWrap {
 public:
-    int error;
+    int error = OPE_OK;
     OggOpusEnc* value = nullptr;
     ~Encoder() override;
     static Nan::Persistent<v8::Function> constructor;
     static void Init(v8::Local<v8::Object>);
 private:
-    explicit Encoder();
+    bool HasError(std::string&& prefix) const;
     static NAN_METHOD(CreateFile);
     static NAN_METHOD(FlushHeader);
     static NAN_METHOD(Drain);

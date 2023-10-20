@@ -5,4 +5,4 @@ add_library(
     NodeOpusEnc SHARED
     opusenc.cpp opusenc.h Encoder.cpp Encoder.h Comments.cpp Comments.h
 )
-target_link_libraries(NodeOpusEnc PRIVATE libopusenc node_addon opus)
+target_link_libraries(NodeOpusEnc PRIVATE node_addon opus libopusenc)
