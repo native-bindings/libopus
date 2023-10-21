@@ -3,6 +3,56 @@ import path from "path";
 import fs from "fs";
 import test from "ava";
 import { concatMap, from, map, of, range, throwError } from "rxjs";
+import * as math from "mathjs";
+
+const frequencyMap = {
+    A: 440,
+    "A#": 466.16,
+    Bb: 466.16,
+    B: 493.88,
+    Cb: 493.88,
+    C: 261.63,
+    "C#": 277.18,
+    Db: 277.18,
+    D: 293.66,
+    "D#": 311.13,
+    Eb: 311.13,
+    E: 329.63,
+    Fb: 329.63,
+    "E#": 349.23,
+    F: 349.23,
+    "F#": 369.99,
+    Gb: 369.99,
+    G: 392.0,
+    "G#": 415.3,
+    Ab: 415.3,
+};
+
+function generateNote(
+    note: keyof typeof frequencyMap,
+    durationMillis: number,
+    sampleRate: number
+): Float32Array {
+    if (!frequencyMap[note]) {
+        throw new Error(`Invalid note: ${note}`);
+    }
+
+    const angularFrequency = 2 * Math.PI * frequencyMap[note];
+
+    // Convert duration from milliseconds to seconds
+    const durationSeconds = durationMillis / 1000;
+
+    // Calculate the number of samples
+    const numSamples = Math.round(durationSeconds * sampleRate);
+
+    const arr = new Float32Array(numSamples);
+
+    for (let i = 0; i < numSamples; ++i) {
+        arr[i] = Math.sin((angularFrequency * i) / sampleRate);
+    }
+
+    return arr;
+}
 
 async function stream(pcmFile: string, frameSize: number) {
     const fd = await fs.promises.open(pcmFile);
@@ -25,6 +75,103 @@ async function stream(pcmFile: string, frameSize: number) {
         })
     );
 }
+
+function findDominantFrequency(pcmData: Float32Array, sampleRate: number) {
+    const phasors = math.fft(Array.from(pcmData));
+    const magnitudes = phasors.map((phasor) => math.abs(phasor));
+
+    let maxIndex = magnitudes.reduce(
+        (iMax, x, i, arr) => (math.larger(x, arr[iMax]) ? i : iMax),
+        0
+    );
+
+    // Perform Quadratic Interpolation
+    const preciseFrequency = interpolateFrequency(
+        magnitudes,
+        maxIndex,
+        sampleRate,
+        pcmData.length
+    );
+
+    return preciseFrequency;
+}
+
+function interpolateFrequency(
+    magnitudes: number[],
+    index: number,
+    sampleRate: number,
+    N: number
+) {
+    const alpha = magnitudes[index - 1];
+    const beta = magnitudes[index];
+    const gamma = magnitudes[index + 1];
+
+    const improvedIndex =
+        index + (0.5 * (alpha - gamma)) / (alpha - 2 * beta + gamma);
+
+    return (improvedIndex * sampleRate) / N;
+}
+
+/**
+ * Opus frame duration in milliseconds
+ */
+type OpusFrameDuration = 2.5 | 5 | 10 | 20 | 40 | 60;
+
+function sampleCount(sampleRate: number, duration: OpusFrameDuration) {
+    return (sampleRate / 1000) * duration;
+}
+
+test("opus/Decoder to output somewhat precise frequency using the data created by opus/Encoder class", async (t) => {
+    const rate = 48000;
+    const frameDuration: OpusFrameDuration = 60;
+    const encoder = new opus.Encoder(
+        rate,
+        1,
+        opus.constants.OPUS_APPLICATION_AUDIO
+    );
+    type Note = keyof typeof frequencyMap;
+    const notes: Note[] = ["A", "B", "C", "D", "E", "F", "G"];
+    const decoder = new opus.Decoder(rate, 1);
+    const encoded = new Uint8Array(1024 * 1024 * 2);
+    const pcm = new Float32Array(sampleCount(rate, frameDuration));
+    for (const noteKey of notes) {
+        const original = generateNote(noteKey, frameDuration, rate);
+        const expectedFrequencies = [
+            frequencyMap[noteKey] - 3,
+            frequencyMap[noteKey] - 2,
+            frequencyMap[noteKey] - 1,
+            frequencyMap[noteKey],
+            frequencyMap[noteKey] + 1,
+            frequencyMap[noteKey] + 2,
+            frequencyMap[noteKey] + 3,
+            frequencyMap[noteKey] + 4,
+            frequencyMap[noteKey] + 5,
+        ];
+        const pageByteLength = encoder.encodeFloat(
+            original,
+            original.length,
+            encoded,
+            encoded.byteLength
+        );
+        const decodedSampleCount = decoder.decodeFloat(
+            encoded,
+            pageByteLength,
+            pcm,
+            pcm.length,
+            0
+        );
+        const calculatedFrequency = findDominantFrequency(pcm, rate);
+        t.deepEqual(decodedSampleCount, sampleCount(rate, frameDuration));
+        t.assert(
+            expectedFrequencies.some(
+                (freq) => Math.round(freq) === Math.round(calculatedFrequency)
+            ),
+            `Expected ${noteKey} to be one of "${expectedFrequencies.join(
+                ", "
+            )}", but got ${calculatedFrequency} instead.`
+        );
+    }
+});
 
 test("opus/Encoder", async (t) => {
     const enc = new opus.Encoder(
