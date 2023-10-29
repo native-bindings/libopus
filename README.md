@@ -1,9 +1,9 @@
-# libopus
+# @native-bindings/libopus
 
 ## Installation
 
 ```
-yarn add libopus
+npm install @native-bindings/libopus
 ```
 
 ## Description
@@ -15,7 +15,7 @@ Entirely synchronous API to create .ogg files encoded using libopus library. It 
 Below it's an example on how to use the opus codec by itself, without interference of the libopusenc. AFAIK, the encoded data cannot be directly placed in a .ogg file for playing. If you need that, see the next example.
 
 ```ts
-import opus from "libopus";
+import opus from "@native-bindings/libopus";
 
 export function createTestCodec() {
     const frameSize = 2880;
@@ -76,7 +76,7 @@ export function createTestCodec() {
 This package comes with libopusenc embedded in it, so you can create .ogg/.opus files directly with it with any sample rate. It will use speexdsp in case a sample rate that is not supported by libopus is used when creating the encoder. See the example below:
 
 ```ts
-import opus from "libopus";
+import opus from "@native-bindings/libopus";
 
 const comments = new opus.opusenc.Comments();
 const enc = new opus.opusenc.Encoder();
@@ -111,7 +111,7 @@ return new Promise<void>((resolve) => {
 ## Usage of opusfile
 
 ```ts
-import { OpusFile } from "libopus";
+import { OpusFile } from "@native-bindings/libopus";
 
 const of = new OpusFile();
 of.openFile(path.resolve(__dirname, "sample-3.opus"));
@@ -142,7 +142,7 @@ assert.strict.equal(of.rawTotal(0), 705632);
 You can also open the file from memory:
 
 ```ts
-import { OpusFile } from "libopus";
+import { OpusFile } from "@native-bindings/libopus";
 
 const of = new OpusFile();
 of.openMemory(await fs.promises.readFile("./sample.opus"));
