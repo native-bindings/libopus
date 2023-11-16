@@ -5,3 +5,4 @@ opusfile/**/* filter=lfs diff=lfs merge=lfs -text
 ogg/**/* filter=lfs diff=lfs merge=lfs -text
 test/*.bin filter=lfs diff=lfs merge=lfs -text
 libs/**/* filter=lfs diff=lfs merge=lfs -text
+third-party/**/* filter=lfs diff=lfs merge=lfs -text
