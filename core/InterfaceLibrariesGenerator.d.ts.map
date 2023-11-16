@@ -1,0 +1,1 @@
+{"version":3,"file":"InterfaceLibrariesGenerator.d.ts","sourceRoot":"","sources":["InterfaceLibrariesGenerator.ts"],"names":[],"mappings":"AASA,OAAO,EAAE,QAAQ,EAAE,MAAM,YAAY,CAAC;AAqBtC,MAAM,CAAC,OAAO,OAAO,2BAA2B;IACzB,OAAO,CAAC,QAAQ,CAAC,kBAAkB;gBAAlB,kBAAkB,EAAE,MAAM;IACjD,0BAA0B,CAAC,cAAc,EAAE,QAAQ,EAAE;CA6FrE"}

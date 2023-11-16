@@ -1,0 +1,30 @@
+{
+    "extends": "../tsconfig.base.json",
+    "compilerOptions": {},
+    "include": [
+        "decodeText.ts",
+        "resolveVariables.ts",
+        "resolveVariables.spec.ts",
+        "preprocessor/isTokenImmediatelyAfter.ts",
+        "preprocessor/isTokenImmediatelyAfter.spec.ts",
+        "parseArgumentsLine.ts",
+        "Compiler.ts",
+        "Parser.ts",
+        "camelCase.ts",
+        "index.ts",
+        "Exception.ts",
+        "compareBuffer.ts",
+        "Uint8ArrayReader.ts",
+        "ErrorFormatter.ts",
+        "RangeFactory.ts",
+        "preprocessor/PreprocessorTokenizer.ts",
+        "preprocessor/PreprocessorParser.ts",
+        "Preprocessor.ts",
+        "Tokenizer.ts",
+        "Character.ts",
+        "getPrefixFromSourceDir.ts",
+        "InterfaceLibrariesGenerator.ts",
+        "mapVariablePositions.ts",
+        "PkgConfigFileParser.ts"
+    ]
+}

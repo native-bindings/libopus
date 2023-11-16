@@ -1,0 +1,1 @@
+{"version":3,"file":"ErrorFormatter.d.ts","sourceRoot":"","sources":["ErrorFormatter.ts"],"names":[],"mappings":"AAoDA,MAAM,CAAC,OAAO,OAAO,cAAc;;gBAIZ,EACf,QAAQ,EACR,MAAM,EACN,IAAI,EACP,EAAE;QACC,QAAQ,EAAE,UAAU,CAAC;QACrB,IAAI,EAAE,MAAM,CAAC;QACb,MAAM,IAAI,MAAM,CAAC;KACpB;IAKM,OAAO,CAAC,sBAAsB,SAAK;;;;;;;IAiBnC,MAAM,CAAC,OAAO,EAAE,MAAM;CAoBhC"}
