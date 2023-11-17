@@ -9,11 +9,19 @@ import parseArgumentsLine, {
 } from "./parseArgumentsLine";
 import { ILibrary } from "./Compiler";
 import { glob } from "glob";
+import { IPkgConfigLibrary } from "./getLinkLibrariesFromRequiresLine";
+import parseRequiresLine from "./parseRequiresLine";
 
 async function parsePkgConfigFile(pkgConfigFile: string) {
-    return new PkgConfigFileParser(
-        await fs.promises.readFile(pkgConfigFile, "utf8")
-    ).parse();
+    try {
+        return new PkgConfigFileParser({
+            contents: await fs.promises.readFile(pkgConfigFile, "utf8"),
+            file: pkgConfigFile,
+        }).parse();
+    } catch (reason) {
+        console.error("Failure while parsing file: %s", pkgConfigFile);
+        throw reason;
+    }
 }
 
 function getFindLibraryVariableName(libraryName: string) {
@@ -28,40 +36,78 @@ function joinAsString(value: string[]) {
         .join(" ");
 }
 
+function getPkgConfigPath({
+    sourceDir,
+    libsDir,
+}: {
+    sourceDir: string;
+    libsDir: string;
+}) {
+    const installDir = getPrefixFromSourceDir({
+        sourceDir,
+        libsDir,
+    });
+    return path.resolve(installDir, "lib/pkgconfig");
+}
+
 export default class InterfaceLibrariesGenerator {
+    readonly #pcFiles = new Map<string, Map<string, string>>();
+    readonly #libraryPcFiles = new Map<ILibrary, string[]>();
     public constructor(private readonly librariesDirectory: string) {}
     public async generateInterfaceLibraries(inputLibraries: ILibrary[]) {
         const cs = new CodeStream();
-        for (const { sourceDir } of inputLibraries) {
-            const installDir = getPrefixFromSourceDir({
-                sourceDir,
+        for (const lib of inputLibraries) {
+            const folder = getPkgConfigPath({
+                sourceDir: lib.sourceDir,
                 libsDir: this.librariesDirectory,
             });
-            const pkgConfigPath = path.resolve(installDir, "lib/pkgconfig");
-            const packageConfigFiles = await glob(
-                path.resolve(pkgConfigPath, "*.pc")
+            const files = await glob(path.resolve(folder, "*.pc"));
+            for (const pcFile of files) {
+                const key = path.basename(pcFile).replace(/\.pc$/, "");
+                let values = this.#pcFiles.get(key);
+                if (!values) {
+                    values = new Map<string, string>();
+                    this.#pcFiles.set(key, values);
+                }
+                const parsed = await parsePkgConfigFile(pcFile);
+                for (const [key, value] of parsed) {
+                    values.set(key, value);
+                }
+            }
+            this.#libraryPcFiles.set(lib, files);
+        }
+        for (const lib of inputLibraries) {
+            const packageConfigFiles = this.#libraryPcFiles.get(lib);
+            assert.strict.ok(
+                typeof packageConfigFiles !== "undefined" &&
+                    packageConfigFiles.length > 0,
+                `missing package config files for ${lib.sourceDir}`
             );
-            const libraries = new Map<string, ReadonlyMap<string, string>>();
+            const libraries = new Map<string, IPkgConfigLibrary>();
             for (const packageConfigFile of packageConfigFiles) {
                 const values = await parsePkgConfigFile(packageConfigFile);
                 const libraryName = values.get("Name");
-                assert.strict.ok(typeof libraryName === "string");
-                libraries.set(
-                    libraryName,
-                    new Map<string, string>(
-                        [...values].map(([key, value]) => [
+                assert.strict.ok(
+                    typeof libraryName === "string",
+                    "missing name"
+                );
+                libraries.set(libraryName.trim(), {
+                    file: packageConfigFile,
+                    values: new Map<string, string>(
+                        Array.from(values).map(([key, value]) => [
                             key.trim(),
                             value.trim(),
                         ])
-                    )
-                );
+                    ),
+                });
             }
 
-            for (const [libraryName, values] of libraries) {
+            for (const [libraryName, { values, file }] of libraries) {
                 const libs = values.get("Libs");
-                const linkLibraryName = values.get("libname");
-                const requires = values.get("Requires");
                 const cflags = values.get("Cflags");
+                const linkLibraries = new Array<string>();
+                // const privateLinkLibraries = new Array<string>();
+
                 assert.strict.ok(
                     typeof libs === "string" && typeof libraryName === "string"
                 );
@@ -75,39 +121,75 @@ export default class InterfaceLibrariesGenerator {
                     );
                 }
 
+                const includeDirectories = joinAsString(
+                    parsed.includeDirectories
+                );
+
+                const compileOptions = joinAsString(
+                    parsed.remaining.split(" ")
+                );
+
                 cs.write(`add_library(${libraryName} INTERFACE)\n`);
-                cs.write(
-                    `target_include_directories(${libraryName} INTERFACE ${joinAsString(
-                        parsed.includeDirectories
-                    )})\n`
-                );
-                cs.write(
-                    `target_compile_options(${libraryName} INTERFACE ${joinAsString(
-                        parsed.remaining.split(" ")
-                    )})\n`
-                );
-                const linkLibraries = new Array<string>();
-                if (requires) {
-                    const dependency = Array.from(libraries.values()).find(
-                        (l) => l.get("libname") === requires
+                if (includeDirectories) {
+                    cs.write(
+                        `target_include_directories(${libraryName} INTERFACE ${includeDirectories})\n`
                     );
-                    assert.strict.ok(
-                        dependency,
-                        `missing dependency: ${requires}`
+                }
+                if (compileOptions) {
+                    cs.write(
+                        `target_compile_options(${libraryName} INTERFACE ${compileOptions})\n`
                     );
-                    const cmakeLibraryName = dependency.get("Name");
-                    assert.strict.ok(
-                        cmakeLibraryName,
-                        `missing cmake library name for ${requires}`
-                    );
-                    linkLibraries.push(cmakeLibraryName);
+                }
+                for (const item of [
+                    {
+                        requires: values.get("Requires") ?? null,
+                        list: linkLibraries,
+                    },
+                    // {
+                    //     requires: values.get("Requires.private"),
+                    //     list: privateLinkLibraries,
+                    // },
+                ]) {
+                    if (!item.requires) {
+                        continue;
+                    }
+                    const requirements = parseRequiresLine({
+                        value: item.requires,
+                        file,
+                    });
+                    for (const pcFileName of requirements.keys()) {
+                        const pcFile = this.#pcFiles.get(pcFileName);
+                        assert.strict.ok(
+                            typeof pcFile !== "undefined",
+                            `missing pc file for ${pcFileName}`
+                        );
+                        const linkLibraryName = pcFile.get("Name");
+                        assert.strict.ok(
+                            typeof linkLibraryName !== "undefined",
+                            `missing name for ${pcFileName}`
+                        );
+                        item.list.push(linkLibraryName);
+                    }
+                    // item.list.push(
+                    //     ...getLinkLibrariesFromRequiresLine({
+                    //         requires: item.requires,
+                    //         file,
+                    //         libraryName,
+                    //         libraries,
+                    //     })
+                    // );
                 }
                 const findLibraryVarName =
                     getFindLibraryVariableName(libraryName);
+                const linkLibraryName = parsed.libraries[0];
+                assert.strict.ok(
+                    typeof linkLibraryName === "string",
+                    `missing link library name for ${libraryName}`
+                );
                 cs.write(
                     `find_library(${findLibraryVarName} ${linkLibraryName} HINTS ${joinAsString(
                         parsed.searchDirectories
-                    )})\n`
+                    )} REQUIRED)\n`
                 );
                 linkLibraries.push(`\${${findLibraryVarName}}`);
                 cs.write(

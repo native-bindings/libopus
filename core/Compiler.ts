@@ -31,6 +31,20 @@ export default class Compiler {
         }
     }
 
+    async #autoTools(sourceDir: string) {
+        try {
+            await fs.promises.access(
+                path.resolve(sourceDir, "autogen.sh"),
+                fs.constants.R_OK
+            );
+            await spawn("./autogen.sh", [], {
+                cwd: sourceDir,
+            }).wait();
+            return true;
+        } catch (reason) {}
+        return false;
+    }
+
     async #compileMakefile({
         sourceDir,
         configure,
@@ -40,13 +54,26 @@ export default class Compiler {
         prefix: string;
         sourceDir: string;
     }) {
-        await fs.promises.access(
-            path.resolve(sourceDir, "configure"),
-            fs.constants.R_OK
-        );
+        const env = {
+            ...process.env,
+            PKG_CONFIG_PATH: this.libraries
+                .map((l) =>
+                    getPrefixFromSourceDir({
+                        sourceDir: l.sourceDir,
+                        libsDir: this.librariesDirectory,
+                    })
+                )
+                .join(":"),
+        };
         if (configure) {
+            await this.#autoTools(sourceDir);
+            await fs.promises.access(
+                path.resolve(sourceDir, "configure"),
+                fs.constants.R_OK
+            );
             await spawn("./configure", ["--prefix", prefix], {
                 cwd: sourceDir,
+                env,
             }).wait();
         }
         await spawn("make", [], {

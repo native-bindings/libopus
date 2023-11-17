@@ -3,11 +3,13 @@
     "compilerOptions": {},
     "include": [
         "decodeText.ts",
+        "getLinkLibrariesFromRequiresLine.ts",
         "resolveVariables.ts",
         "resolveVariables.spec.ts",
         "preprocessor/isTokenImmediatelyAfter.ts",
         "preprocessor/isTokenImmediatelyAfter.spec.ts",
         "parseArgumentsLine.ts",
+        "parseRequiresLine.ts",
         "Compiler.ts",
         "Parser.ts",
         "camelCase.ts",

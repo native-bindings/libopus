@@ -1,32 +1,41 @@
 import assert from "assert";
 import resolveVariables from "./resolveVariables";
+import ErrorFormatter from "./ErrorFormatter";
 
 export default class PkgConfigFileParser {
     readonly #contents;
     readonly #definitions = new Map<string, string>();
     readonly #packageInfo = new Map<string, string>();
+    readonly #errorFormatter;
     #offset = 0;
-    public constructor(contents: string) {
+    public constructor({ file, contents }: { contents: string; file: string }) {
         this.#contents = contents;
+        this.#errorFormatter = new ErrorFormatter({
+            contents: new TextEncoder().encode(contents),
+            offset: () => this.#offset,
+            file,
+        });
     }
     public parse(): ReadonlyMap<string, string> {
         while (!this.#eof()) {
+            if (this.#read("#")) {
+                this.#readUntil("\n");
+                continue;
+            }
             const identifier = this.#readIdentifier();
             if (this.#read("=")) {
                 const value = this.#readUntil("\n");
                 this.#definitions.set(identifier, value);
             } else if (this.#read(":")) {
-                assert.strict.ok(
-                    this.#read(" "),
-                    'expected a whitespace after ":"'
-                );
                 const value = this.#readUntil("\n");
                 this.#packageInfo.set(identifier, value);
             } else if (!this.#read("\n") && !this.#read(" ")) {
                 assert.strict.fail(
-                    `unexpected token "${this.#current()}" with char code ${this.#current().charCodeAt(
-                        0
-                    )}`
+                    this.#errorFormatter.format(
+                        `unexpected token "${this.#current()}" with char code ${this.#current().charCodeAt(
+                            0
+                        )}`
+                    )
                 );
             }
         }
