@@ -6,6 +6,7 @@
 /.DS_Store
 /yarn-error.log
 /.vscode
+/libs
 *.js
 *.d.ts
 *.map
