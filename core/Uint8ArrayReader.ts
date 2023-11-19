@@ -36,12 +36,13 @@ export default class Uint8ArrayReader {
         return validator(this.current());
     }
     public current() {
-        const error = this.#errorFormatter.format(`Unexpected EOF`);
         if (this.eof()) {
+            const error = this.#errorFormatter.format(`Unexpected EOF`);
             throw new Exception(error);
         }
-        const ch = this.eof() ? undefined : this.#contents[this.#offset];
-        if (typeof ch === "undefined") {
+        const ch = this.#contents[this.#offset] ?? null;
+        if (ch === null) {
+            const error = this.#errorFormatter.format((`Could not get the current character, but eof() returned false`));
             throw new Exception(error);
         }
         return ch;
