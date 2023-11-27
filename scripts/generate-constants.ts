@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import CodeStream from "codestreamjs";
+import CodeStream from "textstreamjs";
 import {
     getMacroFunctionName,
     getNativeMethodNameFromKey,
