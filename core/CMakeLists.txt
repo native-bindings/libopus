@@ -10,7 +10,7 @@ endif()
 add_library(
     NodeNativeBindingsCore SHARED
     ${CMAKE_JS_SRC}
-    Arguments.cpp Arguments.h
+    Arguments.cpp Arguments.h TypedArrayContents.h
 )
 target_link_libraries(
     NodeNativeBindingsCore

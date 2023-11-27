@@ -3,7 +3,7 @@ import ErrorFormatter from "../ErrorFormatter";
 import Exception from "../Exception";
 import RangeFactory, { IRange } from "../RangeFactory";
 import Uint8ArrayReader, {
-    IUint8ArrayReaderOptions
+    IUint8ArrayReaderOptions,
 } from "../Uint8ArrayReader";
 
 export enum PreprocessorTokenType {
@@ -17,7 +17,7 @@ export enum PreprocessorTokenType {
      * the `value` property should contain just the string literal without the quotes
      */
     LiteralString,
-    UnprocessedBlock
+    UnprocessedBlock,
 }
 
 export interface IPreprocessorToken {
@@ -35,22 +35,30 @@ export default class PreprocessorTokenizer extends Uint8ArrayReader {
         this.#errorFormatter = new ErrorFormatter({
             contents,
             file,
-            offset: () => this.position()
+            offset: () => this.position(),
         });
         this.#rangeFactory = new RangeFactory({
             errorFormatter: this.#errorFormatter,
-            position: () => this.position()
+            position: () => this.position(),
         });
     }
     public tokenize() {
         while (!this.eof()) {
-            if (this.peek("#")) {
+            if (this.peek("/*")) {
+                this.readUntil("*/");
+                this.expect("*/");
+            } else if (this.peek("#")) {
                 this.#readDirective();
+            } else if (
+                this.validate(Character.isWhiteSpace) ||
+                this.validate(Character.isLineBreak)
+            ) {
+                this.advance();
             } else {
                 /**
                  * advance on everything else
                  */
-                this.advance();
+                this.readUntil("\n");
             }
         }
         this.#createRawCodeTokens();
@@ -80,8 +88,8 @@ export default class PreprocessorTokenizer extends Uint8ArrayReader {
                     value: this.subarray(0, token.position.start),
                     position: {
                         start: 0,
-                        end: token.position.start
-                    }
+                        end: token.position.start,
+                    },
                 });
                 continue;
             }
@@ -106,8 +114,8 @@ export default class PreprocessorTokenizer extends Uint8ArrayReader {
                 value: rawCode,
                 position: {
                     start: token.position.end,
-                    end
-                }
+                    end,
+                },
             });
         }
     }
@@ -130,8 +138,8 @@ export default class PreprocessorTokenizer extends Uint8ArrayReader {
             value: this.subarray(start, end),
             position: {
                 start,
-                end
-            }
+                end,
+            },
         });
     }
     #readLiteralString() {
@@ -154,7 +162,7 @@ export default class PreprocessorTokenizer extends Uint8ArrayReader {
         this.#tokens.push({
             type: PreprocessorTokenType.LiteralString,
             value: this.subarray(start, end),
-            position: range
+            position: range,
         });
     }
     #readLineBreak() {
@@ -168,15 +176,15 @@ export default class PreprocessorTokenizer extends Uint8ArrayReader {
             value: result,
             position: {
                 start,
-                end: this.position()
-            }
+                end: this.position(),
+            },
         });
         return true;
     }
     #readBackslash() {
         const start = this.position();
         const result = this.read("\\");
-        if (!result) {
+        if (result === null) {
             return false;
         }
         this.#tokens.push({
@@ -184,8 +192,8 @@ export default class PreprocessorTokenizer extends Uint8ArrayReader {
             value: result,
             position: {
                 start,
-                end: this.position()
-            }
+                end: this.position(),
+            },
         });
         return true;
     }
@@ -195,7 +203,7 @@ export default class PreprocessorTokenizer extends Uint8ArrayReader {
         this.#tokens.push({
             type: PreprocessorTokenType.DirectivePunctuator,
             value,
-            position: this.#rangeFactory.range()
+            position: this.#rangeFactory.range(),
         });
         while (!this.eof() && !this.#readLineBreak()) {
             if (this.#readBackslash()) {
@@ -227,6 +235,10 @@ export default class PreprocessorTokenizer extends Uint8ArrayReader {
         const punctuators = [
             "&&",
             "||",
+            ">=",
+            "<=",
+            "==",
+            "!=",
             "!",
             "(",
             ")",
@@ -234,7 +246,7 @@ export default class PreprocessorTokenizer extends Uint8ArrayReader {
             ">",
             "/",
             ",",
-            "..."
+            "...",
         ].sort((a, b) => b.length - a.length);
         /**
          * Mark position before reading punctuator
@@ -255,7 +267,7 @@ export default class PreprocessorTokenizer extends Uint8ArrayReader {
             const token: IPreprocessorToken = {
                 type: PreprocessorTokenType.Punctuator,
                 value: result,
-                position
+                position,
             };
             this.#tokens.push(token);
             return token;
@@ -282,7 +294,7 @@ export default class PreprocessorTokenizer extends Uint8ArrayReader {
         this.#tokens.push({
             type: PreprocessorTokenType.Identifier,
             value: this.subarray(range.start, range.end),
-            position: range
+            position: range,
         });
     }
 }

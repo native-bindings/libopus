@@ -1,29 +1,37 @@
+import Character from "../Character";
 import ErrorFormatter from "../ErrorFormatter";
 import Exception from "../Exception";
 import compareBuffer from "../compareBuffer";
 import {
     IPreprocessorToken,
-    PreprocessorTokenType
+    PreprocessorTokenType,
 } from "./PreprocessorTokenizer";
 import isTokenImmediatelyAfter from "./isTokenImmediatelyAfter";
 
 export enum PreprocessorNodeType {
     Identifier,
-    UnaryExpression,
     LogicalExpression,
-    FunctionCallExpression,
+    UnaryExpression,
+    BinaryExpression,
     UnprocessedBlock,
     UndefDirective,
     ErrorDirective,
     IncludeDirective,
+    PragmaDirective,
     DefineMacroDirective,
     EndIfDirective,
     LiteralString,
     LiteralNumber,
     ElseDirective,
+    WarningDirective,
     IfNotDefinedDirective,
     IfDirective,
-    IfDefinedDirective
+    IfDefinedDirective,
+}
+
+interface INodePragmaDirective {
+    type: PreprocessorNodeType.PragmaDirective;
+    value: Uint8Array;
 }
 
 interface INodeUnprocessedBlock {
@@ -57,20 +65,23 @@ interface INodeIdentifier {
 interface INodeUnaryExpression {
     type: PreprocessorNodeType.UnaryExpression;
     operator: Uint8Array;
-    expression: PreprocessorNode;
+    expression: PreprocessorExpressionNode;
 }
 
-type Expression =
+interface INodeBinaryExpression {
+    type: PreprocessorNodeType.BinaryExpression;
+    left: PreprocessorExpressionNode;
+    operator: Uint8Array;
+    right: PreprocessorExpressionNode;
+}
+
+export type PreprocessorExpressionNode =
     | INodeLiteralNumber
     | INodeIdentifier
-    | INodeFunctionCallExpression
-    | INodeLogicalExpression;
-
-interface INodeFunctionCallExpression {
-    type: PreprocessorNodeType.FunctionCallExpression;
-    name: Expression;
-    args: INodeIdentifier[];
-}
+    | INodeLogicalExpression
+    | INodeBinaryExpression
+    | INodeUnaryExpression
+    | INodeLiteralString;
 
 interface INodeLogicalExpression {
     type: PreprocessorNodeType.LogicalExpression;
@@ -92,12 +103,17 @@ interface INodeConditionalDirective {
     alternative: PreprocessorNode[];
 }
 
-interface INodeDefineMacroDirective {
+export interface INodeDefineMacroDirective {
     type: PreprocessorNodeType.DefineMacroDirective;
     name: INodeIdentifier;
     arguments: INodeIdentifier[];
     value: Uint8Array | null;
     variadic: boolean;
+}
+
+interface INodeWarningDirective {
+    type: PreprocessorNodeType.WarningDirective;
+    message: INodeLiteralString;
 }
 
 interface INodeIncludeDirective {
@@ -123,14 +139,16 @@ export type PreprocessorNode =
     | INodeConditionalDirective
     | INodeUnprocessedBlock
     | INodeErrorDirective
+    | INodeBinaryExpression
     | INodeUnaryExpression
     | INodeEndIfDirective
     | INodeIncludeDirective
+    | INodeWarningDirective
     | INodeElseDirective
     | INodeLiteralNumber
     | INodeLogicalExpression
-    | INodeFunctionCallExpression
-    | INodeUndefDirective;
+    | INodeUndefDirective
+    | INodePragmaDirective;
 
 export interface IPreprocessorParserOptions {
     file: string;
@@ -142,53 +160,58 @@ function decodeText(value: Uint8Array) {
     return new TextDecoder().decode(value);
 }
 
-// export type DecodePreprocessorNodes<T> = T extends PreprocessorNode ? {
-//     [K in keyof T]: T[K] extends Uint8Array ? string : T[K] extends PreprocessorNode ? DecodePreprocessorNodes<T> : T[K]
-// } : never
-
-// type DecodedPreprocessorNode = DecodePreprocessorNodes<PreprocessorNode>;
-
 export function decodePreprocessorNode(node: PreprocessorNode): unknown {
     switch (node.type) {
         default:
             // @ts-expect-error this is a hack to make sure that all node types are handled
             throw new Exception(`Unhandled node type: ${node.type}`);
+        case PreprocessorNodeType.PragmaDirective:
+            return {
+                ...node,
+                value: decodeText(node.value),
+            };
         case PreprocessorNodeType.ErrorDirective:
             return {
                 ...node,
-                value: decodeText(node.value)
+                value: decodeText(node.value),
             };
         case PreprocessorNodeType.UndefDirective:
             return {
                 ...node,
-                name: decodePreprocessorNode(node.name)
+                name: decodePreprocessorNode(node.name),
             };
         case PreprocessorNodeType.LiteralNumber:
             return {
                 ...node,
-                value: decodeText(node.value)
+                value: decodeText(node.value),
             };
         case PreprocessorNodeType.LiteralString:
             return {
                 ...node,
-                value: decodeText(node.value)
+                value: decodeText(node.value),
             };
         case PreprocessorNodeType.IncludeDirective:
             return {
                 ...node,
-                file: decodeText(node.value)
+                file: decodeText(node.value),
             };
-        case PreprocessorNodeType.FunctionCallExpression:
+        case PreprocessorNodeType.WarningDirective:
             return {
                 ...node,
-                name: decodePreprocessorNode(node.name),
-                args: node.args.map((arg) => decodePreprocessorNode(arg))
+                file: decodeText(node.message.value),
+            };
+        case PreprocessorNodeType.BinaryExpression:
+            return {
+                ...node,
+                left: decodePreprocessorNode(node.left),
+                operator: decodeText(node.operator),
+                right: decodePreprocessorNode(node.right),
             };
         case PreprocessorNodeType.UnaryExpression:
             return {
                 ...node,
                 expression: decodePreprocessorNode(node.expression),
-                operator: decodeText(node.operator)
+                operator: decodeText(node.operator),
             };
         case PreprocessorNodeType.EndIfDirective:
         case PreprocessorNodeType.ElseDirective:
@@ -196,20 +219,20 @@ export function decodePreprocessorNode(node: PreprocessorNode): unknown {
         case PreprocessorNodeType.Identifier:
             return {
                 ...node,
-                value: decodeText(node.value)
+                value: decodeText(node.value),
             };
         case PreprocessorNodeType.DefineMacroDirective:
             return {
                 ...node,
                 name: {
                     ...node.name,
-                    value: decodeText(node.name.value)
+                    value: decodeText(node.name.value),
                 },
                 arguments: node.arguments.map((arg) => ({
                     ...arg,
-                    value: decodeText(arg.value)
+                    value: decodeText(arg.value),
                 })),
-                value: node.value ? decodeText(node.value) : null
+                value: node.value ? decodeText(node.value) : null,
             };
         case PreprocessorNodeType.IfNotDefinedDirective:
         case PreprocessorNodeType.IfDefinedDirective:
@@ -218,19 +241,19 @@ export function decodePreprocessorNode(node: PreprocessorNode): unknown {
                 ...node,
                 condition: decodePreprocessorNode(node.condition),
                 body: decodePreprocessorNodes(node.body),
-                alternative: decodePreprocessorNodes(node.alternative)
+                alternative: decodePreprocessorNodes(node.alternative),
             };
         case PreprocessorNodeType.UnprocessedBlock:
             return {
                 ...node,
-                value: decodeText(node.value)
+                value: decodeText(node.value),
             };
         case PreprocessorNodeType.LogicalExpression:
             return {
                 ...node,
                 left: decodePreprocessorNode(node.left),
                 operator: decodeText(node.operator),
-                right: decodePreprocessorNode(node.right)
+                right: decodePreprocessorNode(node.right),
             };
     }
 }
@@ -246,7 +269,7 @@ export function addUnprocessedSlices<T>({
     tokens,
     contents,
     getNewItem,
-    getItemRange
+    getItemRange,
 }: {
     tokens: T[];
     contents: Uint8Array;
@@ -310,15 +333,13 @@ export default class PreprocessorParser {
         this.#errorFormatter = new ErrorFormatter({
             contents,
             file,
-            offset: () => this.#current().position.start
+            offset: () => this.#current().position.start,
         });
         this.#contents = contents;
-        this.#tokens = tokens.filter(
-            (t) =>
-                // filter out whitespace tokens
-                !compareBuffer(t.value, new TextEncoder().encode(" "))
-        );
+        this.#tokens = Array.from(tokens);
+        this.#simplifyDirectiveTokens();
     }
+
     public parse() {
         while (!this.#eof()) {
             const node = this.#parseCurrent();
@@ -330,6 +351,50 @@ export default class PreprocessorParser {
         return this.#nodes;
     }
 
+    #simplifyDirectiveTokens() {
+        while (!this.#eof()) {
+            if (
+                !this.#readTokenType(PreprocessorTokenType.DirectivePunctuator)
+            ) {
+                this.#advance();
+                continue;
+            }
+            while (this.#read("\n") === null) {
+                /**
+                 * remove whitespace-only tokens
+                 */
+                if (this.#current().value.every(Character.isWhiteSpace)) {
+                    this.#tokens.splice(this.#offset, 1);
+                    continue;
+                }
+                /**
+                 * remove backslash and line break tokens except for the last one to
+                 * avoid having to deal with weird backslashes in the middle of the directive.
+                 */
+                if (this.#current().type === PreprocessorTokenType.Backslash) {
+                    /**
+                     * remove backslash token
+                     */
+                    this.#tokens.splice(this.#offset, 1);
+                    /**
+                     * after the backslash, read until we reach a line break
+                     */
+                    this.#readUntil("\n");
+                    /**
+                     * remove the line break token
+                     */
+                    this.#tokens.splice(this.#offset, 1);
+                    continue;
+                }
+                this.#advance();
+            }
+        }
+        /**
+         * set to 0 to start from the beginning
+         */
+        this.#offset = 0;
+    }
+
     #parseCurrent(): PreprocessorNode | null {
         if (this.#peek("#")) {
             return this.#parseDirective();
@@ -339,7 +404,7 @@ export default class PreprocessorParser {
             const token = this.#advance();
             return {
                 type: PreprocessorNodeType.UnprocessedBlock,
-                value: token.value
+                value: token.value,
             };
         }
         this.#advance();
@@ -348,8 +413,9 @@ export default class PreprocessorParser {
 
     #parseEndIfDirective(): INodeEndIfDirective {
         this.#expect("endif");
+        this.#parseDirectiveEnd();
         return {
-            type: PreprocessorNodeType.EndIfDirective
+            type: PreprocessorNodeType.EndIfDirective,
         };
     }
 
@@ -359,7 +425,7 @@ export default class PreprocessorParser {
         );
         return {
             type: PreprocessorNodeType.LiteralString,
-            value: token.value
+            value: token.value,
         };
     }
 
@@ -367,6 +433,20 @@ export default class PreprocessorParser {
         this.#expect("#");
         const token = this.#current();
         switch (new TextDecoder().decode(token.value)) {
+            case "include":
+                return this.#parseIncludeDirective();
+            case "pragma": {
+                // skip directive name
+                this.#parseIdentifier();
+                const start = this.#current().position.start;
+                const end = this.#parseDirectiveEnd().position.end;
+                return {
+                    type: PreprocessorNodeType.PragmaDirective,
+                    value: this.#contents.subarray(start, end),
+                };
+            }
+            case "undef":
+                return this.#parseUndefDirective();
             case "ifndef":
             case "ifdef":
             case "if":
@@ -377,56 +457,45 @@ export default class PreprocessorParser {
             case "endif":
                 return this.#parseEndIfDirective();
             case "else":
-                this.#advanceDirective();
+                this.#parseDirectiveEnd();
                 return {
-                    type: PreprocessorNodeType.ElseDirective
+                    type: PreprocessorNodeType.ElseDirective,
+                };
+            case "warning":
+                // skip directive name
+                this.#parseIdentifier();
+                const value = this.#parseLiteralString();
+                /**
+                 * finish directive reading
+                 */
+                this.#parseDirectiveEnd();
+                return {
+                    type: PreprocessorNodeType.WarningDirective,
+                    message: value,
                 };
             case "error":
                 const start = this.#current().position.start;
-                const finalToken = this.#advanceDirective();
-                if (finalToken === null) {
-                    throw new Exception(
-                        this.#errorFormatter.format(
-                            `Expected token after #error directive`
-                        )
-                    );
-                }
+                const finalToken = this.#parseDirectiveEnd();
                 return {
                     type: PreprocessorNodeType.ErrorDirective,
                     value: this.#contents.subarray(
                         start,
                         finalToken.position.end
-                    )
+                    ),
                 };
         }
-        if (this.#test("ifndef", "ifdef", "if", "elif")) {
-        } else if (this.#peek("define")) {
-        } else if (this.#peek("endif")) {
-        } else if (this.#read("else")) {
-        } else if (this.#peek("include")) {
-            return this.#parseIncludeDirective();
-        } else if (this.#peek("undef")) {
-            return this.#parseUndefDirective();
-        } else if (this.#peek("error")) {
-            const start = this.#current().position.start;
-            this.#advanceDirective();
-            const end = this.#current().position.start;
-            return {
-                type: PreprocessorNodeType.ErrorDirective,
-                value: this.#contents.subarray(start, end)
-            };
-        }
         throw new Exception(
-            this.#errorFormatter.format(`Expected unknown directive`)
+            this.#errorFormatter.format(`Unknown directive: >${token.value}<`)
         );
     }
 
     #parseUndefDirective(): INodeUndefDirective {
         this.#expect("undef");
         const name = this.#parseIdentifier();
+        this.#parseDirectiveEnd();
         return {
             type: PreprocessorNodeType.UndefDirective,
-            name
+            name,
         };
     }
 
@@ -454,12 +523,18 @@ export default class PreprocessorParser {
             value = this.#contents.subarray(start, lastToken.position.end);
             this.#expect(">");
         }
-        this.#advanceDirective();
+        this.#parseDirectiveEnd();
         return {
             type: PreprocessorNodeType.IncludeDirective,
             value,
-            local
+            local,
         };
+    }
+
+    #parseDirectiveEnd() {
+        const lastDirectiveToken = this.#advanceDirective();
+        this.#expectTokenType(PreprocessorTokenType.LineBreak);
+        return lastDirectiveToken;
     }
 
     /**
@@ -468,13 +543,15 @@ export default class PreprocessorParser {
      * reason, the caller must consume the line break with #expectTokenType(PreprocessorTokenType.LineBreak)
      */
     #advanceDirective() {
-        let lastToken = this.#eof() ? null : this.#current();
+        if (this.#eof()) {
+            throw new Exception(
+                this.#errorFormatter.format(
+                    `Expected to advance directive, but reached the end of the file`
+                )
+            );
+        }
+        let lastToken = this.#current();
         while (!this.#eof() && !this.#peek("\n")) {
-            if (this.#readTokenType(PreprocessorTokenType.Backslash)) {
-                this.#readUntil("\n");
-                this.#expectTokenType(PreprocessorTokenType.LineBreak);
-                continue;
-            }
             lastToken = this.#advance();
         }
         return lastToken;
@@ -519,7 +596,7 @@ export default class PreprocessorParser {
             type: PreprocessorNodeType.DefineMacroDirective,
             arguments: defineArguments,
             value,
-            name
+            name,
         };
     }
 
@@ -527,7 +604,7 @@ export default class PreprocessorParser {
         const token = this.#expectTokenType(PreprocessorTokenType.Identifier);
         return {
             type: PreprocessorNodeType.Identifier,
-            value: token.value
+            value: token.value,
         };
     }
 
@@ -537,11 +614,11 @@ export default class PreprocessorParser {
         );
         return {
             type: PreprocessorNodeType.LiteralNumber,
-            value: token.value
+            value: token.value,
         };
     }
 
-    #parsePrimaryExpression(): PreprocessorNode {
+    #parsePrimaryExpression(): PreprocessorExpressionNode {
         const token = this.#current();
         let result: PreprocessorNode;
         switch (token.type) {
@@ -556,30 +633,17 @@ export default class PreprocessorParser {
                     this.#errorFormatter.format(`Unexpected token`)
                 );
         }
-        if (this.#read("(")) {
-            const passedArgs = new Array<INodeIdentifier>();
-            while (!this.#eof() && !this.#peek(")")) {
-                passedArgs.push(this.#parseIdentifier());
-                if (!this.#read(",")) {
-                    break;
-                }
-            }
-            this.#expect(")");
-            result = {
-                type: PreprocessorNodeType.FunctionCallExpression,
-                name: result,
-                args: passedArgs
-            };
-        }
         return result;
     }
 
-    #parseLogicalExpression(): PreprocessorNode {
+    #parseLogicalExpression(): PreprocessorExpressionNode {
         const expression = this.#parseUnaryExpression();
-        let result: PreprocessorNode = expression;
-        if (this.#peek("&&")) {
-            const operator = this.#expectEither("&&");
-            const right = this.#parseUnaryExpression();
+        for (const operator of ["&&", "||"]) {
+            if (!this.#peek(operator)) {
+                continue;
+            }
+            const token = this.#expect(operator);
+            const right = this.#parseLogicalExpression();
             if (right === null) {
                 throw new Exception(
                     this.#errorFormatter.format(
@@ -587,24 +651,47 @@ export default class PreprocessorParser {
                     )
                 );
             }
-            result = {
+            return {
                 type: PreprocessorNodeType.LogicalExpression,
-                left: result,
-                operator: operator.value,
-                right
+                left: expression,
+                operator: token.value,
+                right,
             };
         }
-        return result;
+        const binaryOperators = [">=", "<=", "==", "!=", ">", "<"];
+        for (const operator of binaryOperators) {
+            const token = this.#read(operator);
+            if (token === null) {
+                continue;
+            }
+            const right = this.#parseUnaryExpression();
+            return {
+                type: PreprocessorNodeType.BinaryExpression,
+                left: expression,
+                operator: token.value,
+                right,
+            };
+        }
+        return expression;
     }
 
-    #parseUnaryExpression(): PreprocessorNode {
-        if (this.#peek("!")) {
-            const operator = this.#expect("!");
-            const expression = this.#parseUnaryExpression();
+    #parseUnaryExpression(): PreprocessorExpressionNode {
+        if (this.#read("(")) {
+            const result = this.#parseLogicalExpression();
+            this.#expect(")");
+            return result;
+        }
+        const unaryOperators = ["!", "defined"];
+        for (const operator of unaryOperators) {
+            if (!this.#peek(operator)) {
+                continue;
+            }
+            const token = this.#expect(operator);
+            const expression = this.#parseLogicalExpression();
             return {
-                operator: operator.value,
+                operator: token.value,
                 type: PreprocessorNodeType.UnaryExpression,
-                expression
+                expression,
             };
         }
         return this.#parsePrimaryExpression();
@@ -662,7 +749,7 @@ export default class PreprocessorParser {
             type: PreprocessorNodeType.IfNotDefinedDirective,
             condition,
             body,
-            alternative
+            alternative,
         };
 
         return node;
@@ -687,6 +774,13 @@ export default class PreprocessorParser {
     #readUntil(value: string) {
         while (!this.#eof() && !this.#peek(value)) {
             this.#advance();
+        }
+        if (this.#eof()) {
+            throw new Exception(
+                this.#errorFormatter.format(
+                    `Expected ${value}, but reached the end of the file`
+                )
+            );
         }
     }
 
@@ -718,35 +812,35 @@ export default class PreprocessorParser {
         return token;
     }
 
-    #expectEither(...possibilities: string[]) {
-        if (this.#eof()) {
-            throw new Exception(
-                this.#errorFormatter.format(
-                    `Expected one of ${possibilities.join(
-                        ", "
-                    )}, but reached the end of the file`
-                )
-            );
-        }
-        if (possibilities.length < 1) {
-            throw new Exception(
-                this.#errorFormatter.format(`Expected at least one possibility`)
-            );
-        }
-        for (const p of possibilities) {
-            const result = this.#read(p);
-            if (result) {
-                return result;
-            }
-        }
-        throw new Exception(
-            this.#errorFormatter.format(
-                `Expected one of ${possibilities.join(
-                    ", "
-                )}, but current value is ${this.#current().value}`
-            )
-        );
-    }
+    // #expectEither(...possibilities: string[]) {
+    //     if (this.#eof()) {
+    //         throw new Exception(
+    //             this.#errorFormatter.format(
+    //                 `Expected one of ${possibilities.join(
+    //                     ", "
+    //                 )}, but reached the end of the file`
+    //             )
+    //         );
+    //     }
+    //     if (possibilities.length < 1) {
+    //         throw new Exception(
+    //             this.#errorFormatter.format(`Expected at least one possibility`)
+    //         );
+    //     }
+    //     for (const p of possibilities) {
+    //         const result = this.#read(p);
+    //         if (result) {
+    //             return result;
+    //         }
+    //     }
+    //     throw new Exception(
+    //         this.#errorFormatter.format(
+    //             `Expected one of ${possibilities.join(
+    //                 ", "
+    //             )}, but current value is ${this.#current().value}`
+    //         )
+    //     );
+    // }
 
     #expectTokenType(type: PreprocessorTokenType) {
         if (this.#eof()) {
@@ -790,15 +884,15 @@ export default class PreprocessorParser {
         return token;
     }
 
-    #test(...value: string[]) {
-        for (const v of value) {
-            const token = this.#peek(v);
-            if (token !== null) {
-                return token;
-            }
-        }
-        return null;
-    }
+    // #test(...value: string[]) {
+    //     for (const v of value) {
+    //         const token = this.#peek(v);
+    //         if (token !== null) {
+    //             return token;
+    //         }
+    //     }
+    //     return null;
+    // }
 
     #peek(value: string, skip = 0) {
         if (this.#eof()) {

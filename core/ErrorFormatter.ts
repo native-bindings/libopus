@@ -57,7 +57,7 @@ export default class ErrorFormatter {
     public constructor({
         contents,
         offset,
-        file
+        file,
     }: {
         contents: Uint8Array;
         file: string;
@@ -81,7 +81,7 @@ export default class ErrorFormatter {
         );
         return {
             position,
-            slice
+            slice,
         };
     }
     public format(message: string) {
@@ -98,10 +98,8 @@ export default class ErrorFormatter {
             0,
             `${" ".repeat(position.lineNumberOffset)}^ ${message}`
         );
-        return `Error at ${this.#file}:${
-            lineNumber + 1
-        }:${lineNumberOffset}:\n\n\t${message}\n\nDetailed:\n\n${finalPreview.join(
-            "\n"
-        )}\n\n`;
+        return `Error at ${this.#file}:${lineNumber + 1}:${
+            lineNumberOffset + 1
+        }:\n\n\t${message}\n\nDetailed:\n\n${finalPreview.join("\n")}\n\n`;
     }
 }

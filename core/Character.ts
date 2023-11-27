@@ -8,8 +8,13 @@ export default class Character {
     static isIdentifierPart(ch: number) {
         return Character.isIdentifierStart(ch) || Character.isIntegerPart(ch);
     }
+    /**
+     * Checks if the character is a space or a tab
+     * @param ch character code
+     * @returns true if the character is a space or a tab
+     */
     static isWhiteSpace(ch: number) {
-        return ch === 32;
+        return ch === 32 || ch === 9;
     }
     // "
     static isStringLiteralStart(ch: number) {
