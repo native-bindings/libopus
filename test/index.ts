@@ -4,6 +4,7 @@ import fs from "fs";
 import test from "ava";
 import { concatMap, from, map, of, range, throwError } from "rxjs";
 import * as math from "mathjs";
+import assert from "assert";
 
 const frequencyMap = {
     A: 440,
@@ -31,7 +32,7 @@ const frequencyMap = {
 function generateNote(
     note: keyof typeof frequencyMap,
     durationMillis: number,
-    sampleRate: number
+    sampleRate: number,
 ): Float32Array {
     if (!frequencyMap[note]) {
         throw new Error(`Invalid note: ${note}`);
@@ -70,9 +71,9 @@ async function stream(pcmFile: string, frameSize: number) {
                     }
                     return throwError(() => new Error("EOF"));
                 }),
-                map((result) => new Float32Array(result.buffer.buffer))
+                map((result) => new Float32Array(result.buffer.buffer)),
             );
-        })
+        }),
     );
 }
 
@@ -80,17 +81,18 @@ function findDominantFrequency(pcmData: Float32Array, sampleRate: number) {
     const phasors = math.fft(Array.from(pcmData));
     const magnitudes = phasors.map((phasor) => math.abs(phasor));
 
-    let maxIndex = magnitudes.reduce(
-        (iMax, x, i, arr) => (math.larger(x, arr[iMax]) ? i : iMax),
-        0
-    );
+    let maxIndex = magnitudes.reduce((iMax, x, i, arr) => {
+        const n = arr[iMax];
+        assert.strict.ok(typeof n !== "undefined", `n is undefined`);
+        return math.larger(x, n) ? i : iMax;
+    }, 0);
 
     // Perform Quadratic Interpolation
     const preciseFrequency = interpolateFrequency(
         magnitudes,
         maxIndex,
         sampleRate,
-        pcmData.length
+        pcmData.length,
     );
 
     return preciseFrequency;
@@ -100,11 +102,18 @@ function interpolateFrequency(
     magnitudes: number[],
     index: number,
     sampleRate: number,
-    N: number
+    N: number,
 ) {
     const alpha = magnitudes[index - 1];
     const beta = magnitudes[index];
     const gamma = magnitudes[index + 1];
+
+    assert.strict.ok(
+        typeof alpha !== "undefined" &&
+            typeof beta !== "undefined" &&
+            typeof gamma !== "undefined",
+        `alpha is undefined for index ${index}`,
+    );
 
     const improvedIndex =
         index + (0.5 * (alpha - gamma)) / (alpha - 2 * beta + gamma);
@@ -127,7 +136,7 @@ test("opus/Decoder to output somewhat precise frequency using the data created b
     const encoder = new opus.Encoder(
         rate,
         1,
-        opus.constants.OPUS_APPLICATION_AUDIO
+        opus.constants.OPUS_APPLICATION_AUDIO,
     );
     type Note = keyof typeof frequencyMap;
     const notes: Note[] = ["A", "B", "C", "D", "E", "F", "G"];
@@ -151,24 +160,24 @@ test("opus/Decoder to output somewhat precise frequency using the data created b
             original,
             original.length,
             encoded,
-            encoded.byteLength
+            encoded.byteLength,
         );
         const decodedSampleCount = decoder.decodeFloat(
             encoded,
             pageByteLength,
             pcm,
             pcm.length,
-            0
+            0,
         );
         const calculatedFrequency = findDominantFrequency(pcm, rate);
         t.deepEqual(decodedSampleCount, sampleCount(rate, frameDuration));
         t.assert(
             expectedFrequencies.some(
-                (freq) => Math.round(freq) === Math.round(calculatedFrequency)
+                (freq) => Math.round(freq) === Math.round(calculatedFrequency),
             ),
             `Expected ${noteKey} to be one of "${expectedFrequencies.join(
-                ", "
-            )}", but got ${calculatedFrequency} instead.`
+                ", ",
+            )}", but got ${calculatedFrequency} instead.`,
         );
     }
 });
@@ -177,7 +186,7 @@ test("opus/Encoder", async (t) => {
     const enc = new opus.Encoder(
         48000,
         1,
-        opus.constants.OPUS_APPLICATION_VOIP
+        opus.constants.OPUS_APPLICATION_VOIP,
     );
     const opusFrames = (
         await stream(path.resolve(__dirname, "f32le_48000_1_10.bin"), 2880)
@@ -185,7 +194,7 @@ test("opus/Encoder", async (t) => {
         map((samples) => {
             const length = enc.encodeFloat(samples, 2880, out, out.byteLength);
             return out.slice(0, length);
-        })
+        }),
     );
 
     const out = new Uint8Array(1024 * 1024 * 2);
@@ -200,7 +209,7 @@ test("opus/Encoder", async (t) => {
                 opusFrame.byteLength,
                 out,
                 2880,
-                0
+                0,
             );
 
             t.deepEqual(decoded, 2880);
@@ -210,7 +219,7 @@ test("opus/Encoder", async (t) => {
     return new Promise((resolve) =>
         sub.add(() => {
             resolve();
-        })
+        }),
     );
 });
 
@@ -218,19 +227,19 @@ test("opusfile/OpusFile/openFile", (t) => {
     const of = new OpusFile();
     of.openFile(path.resolve(__dirname, "sample-3.opus"));
     const pcm = new Float32Array(2880);
-    t.deepEqual(of.pcmTell(), 0);
+    t.deepEqual(of.pcmTell(), "0");
     t.deepEqual(of.readFloat(pcm), {
         sampleCount: 648,
         linkIndex: 0,
     });
-    t.deepEqual(of.pcmTell(), 648);
+    t.deepEqual(of.pcmTell(), "648");
     t.deepEqual(of.readFloat(pcm), {
         sampleCount: 960,
         linkIndex: 0,
     });
-    t.deepEqual(of.pcmTell(), 1608);
-    t.deepEqual(of.pcmSeek(0), undefined);
-    t.deepEqual(of.pcmTell(), 0);
+    t.deepEqual(of.pcmTell(), "1608");
+    t.deepEqual(of.pcmSeek("0"), undefined);
+    t.deepEqual(of.pcmTell(), "0");
     t.deepEqual(of.readFloat(pcm), {
         sampleCount: 648,
         linkIndex: 0,
@@ -238,7 +247,7 @@ test("opusfile/OpusFile/openFile", (t) => {
     t.deepEqual(of.channelCount(0), 2);
     t.deepEqual(of.channelCount(1), 2);
     t.deepEqual(of.linkCount(), 1);
-    t.deepEqual(of.rawTotal(0), 705632);
+    t.deepEqual(of.rawTotal(0), "705632");
 });
 
 test("opusenc/Encoder/createPull", async (t) => {
@@ -247,7 +256,7 @@ test("opusenc/Encoder/createPull", async (t) => {
     enc.createPull(comments, 48000, 1, 0);
     const duration = 4;
     const fd = await fs.promises.open(
-        path.resolve(__dirname, "f32le_48000_1_10.bin")
+        path.resolve(__dirname, "f32le_48000_1_10.bin"),
     );
     const opusFile = new Array<Uint8Array>();
     const totalFileSize = (await fd.stat()).size;
@@ -283,21 +292,21 @@ test("opusenc/Encoder/createPull", async (t) => {
     const of = new OpusFile();
     const frame = new Float32Array(48000);
     of.openMemory(Buffer.concat(opusFile));
-    t.deepEqual(of.pcmTotal(-1), 480000);
-    t.deepEqual(of.pcmTell(), 0);
+    t.deepEqual(of.pcmTotal(-1), "480000");
+    t.deepEqual(of.pcmTell(), "0");
     t.deepEqual(of.readFloat(frame), {
         sampleCount: 648,
         linkIndex: 0,
     });
-    t.deepEqual(of.pcmTell(), 648);
+    t.deepEqual(of.pcmTell(), "648");
     t.deepEqual(of.readFloat(frame), {
         sampleCount: 960,
         linkIndex: 0,
     });
-    t.deepEqual(of.pcmTell(), 1608);
+    t.deepEqual(of.pcmTell(), "1608");
     t.deepEqual(of.readFloat(frame), {
         sampleCount: 960,
         linkIndex: 0,
     });
-    t.deepEqual(of.pcmTell(), 2568);
+    t.deepEqual(of.pcmTell(), "2568");
 });

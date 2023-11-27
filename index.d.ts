@@ -4,20 +4,20 @@ export class Encoder {
         pcm: Int16Array,
         frameSize: number,
         outData: Uint8Array,
-        maxDataBytes: number
+        maxDataBytes: number,
     ): number;
     encodeAsync(
         pcm: Int16Array,
         frameSize: number,
         outData: Uint8Array,
         maxDataBytes: number,
-        fn: (value: string | number) => void
+        fn: (value: string | number) => void,
     ): void;
     encodeFloat(
         pcm: Float32Array,
         frameSize: number,
         data: Uint8Array,
-        maxDataBytes: number
+        maxDataBytes: number,
     ): number;
     // generated functions
     setApplication(value: number): void;
@@ -68,7 +68,7 @@ export class Decoder {
         encodedLength: number,
         pcmOut: Int16Array,
         frameSize: number,
-        decodeFec: number
+        decodeFec: number,
     ): number;
     decodeAsync(
         encoded: Uint8Array,
@@ -76,14 +76,14 @@ export class Decoder {
         pcmOut: Int16Array,
         frameSize: number,
         decodeFec: number,
-        fn: (value: string | number) => void
+        fn: (value: string | number) => void,
     ): void;
     decodeFloat(
         encoded: Uint8Array,
         encodedLength: number,
         pcmOut: Float32Array,
         frameSize: number,
-        decodeFec: number
+        decodeFec: number,
     ): number;
     // generated functions
     setApplication(value: number): void;
@@ -155,9 +155,9 @@ export class OpusFile {
      * @returns The PCM length of the entire stream if @param li is negative, the PCM length of link @param li if it is non-negative
      */
     pcmTotal(li: number): number;
-    pcmSeek(offset: number): number;
+    pcmSeek(offset: string): string;
     channelCount(li: number): number;
-    rawTotal(li: number): number;
+    rawTotal(li: number): string;
     linkCount(): number;
 }
 
@@ -169,7 +169,7 @@ export namespace opusenc {
             file: string,
             rate: number,
             channels: number,
-            family: number
+            family: number,
         ): void;
         // Write out the header now rather than wait for audio to begin.
         flushHeader(): void;
@@ -181,7 +181,7 @@ export namespace opusenc {
             comments: Comments,
             rate: number,
             channels: number,
-            family: number
+            family: number,
         ): void;
         // Add/encode any number of float samples to the file.
         writeFloat(value: Float32Array, samples: number): void;
@@ -199,7 +199,7 @@ export namespace opusenc {
             family: number,
             streams: number,
             coupled_streams: number,
-            mapping: Uint8Array
+            mapping: Uint8Array,
         ): void;
         getPage(flush: boolean): Uint8Array | null;
         chainCurrent(comments: Comments): void;
@@ -243,4 +243,4 @@ export namespace opusenc {
     }
 }
 
-export { default as constants } from "./constants";
+export const constants: import("./constants").IConstants;

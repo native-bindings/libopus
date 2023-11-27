@@ -138,6 +138,7 @@ async function run() {
 
     if (getArgument(args, "--generate-constants") !== null) {
         await generateConstants();
+        return;
     }
 
     if (getArgument(args, "--skip-third-party") === null) {
