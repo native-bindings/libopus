@@ -9,7 +9,7 @@
         "constants.d.ts",
         "index.js",
         "scripts/**/*.{js,d.ts,map,ts}",
-        "core/**/*.{js,d.ts,map,ts,txt}",
+        "core/**/*.{js,d.ts,map,ts,txt,h,cpp}",
         "CMakeLists.txt",
         "src",
         "third-party"
