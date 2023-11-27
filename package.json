@@ -32,7 +32,7 @@
     ],
     "license": "MIT",
     "name": "@native-bindings/libopus",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "devDependencies": {
         "@types/node": "^20.9.1",
         "@types/node-fetch": "^2.6.6",
