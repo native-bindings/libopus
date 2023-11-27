@@ -1,5 +1,5 @@
 #include "Encoder.h"
-#include "Arguments.h"
+#include "core/Arguments.h"
 #include "Constants.h"
 
 #include <nan.h>
@@ -24,23 +24,19 @@ void Encoder::Init(v8::Local<v8::Object> exports) {
 }
 
 NAN_METHOD(Encoder::New){
+    Arguments args(info, "constructor");
     int sampleRate,channels,application, err;
     if(
-        !Arguments::ConvertValue(info, 0, sampleRate) ||
-        !Arguments::ConvertValue(info, 1, channels)
+        !args.Convert(0, sampleRate) ||
+        !args.Convert(1, channels) ||
+        !args.ConvertCustom<int>(2, application, OpusApplicationConstants::Convert)
     ) {
-        return;
-    }
-    if(!bindings::opusenc::ConvertOpusJavaScriptConstant(info[2],application)){
-        Nan::ThrowError("Third argument must be a valid integer");
         return;
     }
 
     OpusEncoder* value = opus_encoder_create(sampleRate,channels,application,&err);
     if(err != OPUS_OK){
-        Nan::ThrowError(Nan::New(
-            "Failed to create encoder: " + std::string(opus_strerror(err))
-        ).ToLocalChecked());
+        Nan::ThrowError(Nan::New("Failed to create encoder: " + std::string(opus_strerror(err))).ToLocalChecked());
         return;
     }
     auto* enc = new Encoder(value);
@@ -51,21 +47,25 @@ NAN_METHOD(Encoder::New){
 NAN_METHOD(Encoder::Encode){
     Encoder* enc;
     opus_int32 maxDataBytes;
-    opus_int16* pcm;
+    TypedArrayContents<opus_int16> pcm;
     int frameSize;
-    std::uint8_t* data;
+    TypedArrayContents<std::uint8_t> data;
+    Arguments args(info, "encode");
 
     if(
-        !Arguments::Unwrap<Encoder>(info.This(), enc) ||
-        !Arguments::ConvertValue(info, 0, pcm) ||
-        !Arguments::ConvertValue(info, 1, frameSize) ||
-        !Arguments::ConvertValue(info, 2, data) ||
-        !Arguments::ConvertValue(info, 3, maxDataBytes)
+        !args.Unwrap(enc) ||
+        !args.ConvertTypedArrayContents(0, pcm) || !args.Convert(1, frameSize) ||
+        !args.ConvertTypedArrayContents(2, data) || !args.Convert(3, maxDataBytes)
     ){
         return;
     }
 
-    int encodedPacketLengthInBytes = opus_encode(enc->value,pcm,frameSize,data,maxDataBytes);
+    if(data.size < maxDataBytes) {
+        Nan::ThrowError("maxDataBytes must be at least the size of the Int16Array");
+        return;
+    }
+
+    int encodedPacketLengthInBytes = opus_encode(enc->value, pcm.value, frameSize, data.value, maxDataBytes);
     if(encodedPacketLengthInBytes < 0){
         Nan::ThrowError(Nan::New(
             "Failed to encode with OPUS error: " + std::string(opus_strerror(encodedPacketLengthInBytes))
@@ -80,18 +80,20 @@ NAN_METHOD(Encoder::Encode){
 NAN_METHOD(Encoder::EncodeAsync){
     Encoder* enc;
     opus_int32 maxDataBytes;
-    opus_int16* pcm;
+//    ConvertTypedArrayContents<opus_int16> pcm;
     int frameSize;
-    std::uint8_t* data;
+//    ConvertTypedArrayContents<std::uint8_t> data;
+    v8::Local<v8::Value> pcm, data;
     v8::Local<v8::Function> callback;
+    Arguments args(info, "encodeAsync");
 
     if(
-        !Arguments::Unwrap<Encoder>(info.This(), enc) ||
-        !Arguments::ConvertValue(info, 0, pcm) ||
-        !Arguments::ConvertValue(info, 1, frameSize) ||
-        !Arguments::ConvertValue(info, 2, data) ||
-        !Arguments::ConvertValue(info, 3, maxDataBytes) ||
-        !Arguments::ConvertValue(info, 4, callback)
+        !args.Unwrap(enc) ||
+        !args.GetArgument(0, pcm) ||
+        !args.Convert(1, frameSize) ||
+        !args.GetArgument(2, data) ||
+        !args.Convert(3, maxDataBytes) ||
+        !args.Convert(4, callback)
     ){
         return;
     }
@@ -120,20 +122,21 @@ NAN_METHOD(Encoder::EncodeAsync){
 NAN_METHOD(Encoder::EncodeFloat){
     Encoder* enc;
     opus_int32 maxDataBytes;
-    float* pcm;
+    TypedArrayContents<float> pcm;
     int frameSize;
-    std::uint8_t* data;
+    TypedArrayContents<std::uint8_t> data;
+    Arguments args(info, "encodeFloat");
     if(
-        !Arguments::Unwrap<Encoder>(info.This(), enc) ||
-        !Arguments::ConvertValue(info,0,pcm) ||
-        !Arguments::ConvertValue(info,1,frameSize) ||
-        !Arguments::ConvertValue(info,2,data) ||
-        !Arguments::ConvertValue(info,3,maxDataBytes)
+        !args.Unwrap(enc) ||
+        !args.ConvertTypedArrayContents(0,pcm) ||
+        !args.Convert(1,frameSize) ||
+        !args.ConvertTypedArrayContents(2,data) ||
+        !args.Convert(3,maxDataBytes)
     ){
         return;
     }
 
-    int encodedPacketLengthInBytes = opus_encode_float(enc->value,pcm,frameSize,data,maxDataBytes);
+    int encodedPacketLengthInBytes = opus_encode_float(enc->value,pcm.value,frameSize,data.value,maxDataBytes);
     if(encodedPacketLengthInBytes < 0){
         Nan::ThrowError(Nan::New(
             "Failed to encode with error: " + std::string(opus_strerror(encodedPacketLengthInBytes))
@@ -156,23 +159,25 @@ Encoder::~Encoder() {
 EncoderEncodeAsyncWorker::EncoderEncodeAsyncWorker(
     Nan::Callback* callback,
     OpusEncoder* encoder,
-    opus_int16 *pcm,
+    v8::Local<v8::Value>& input,
     int frameSize,
-    std::uint8_t* data,
+    v8::Local<v8::Value>& data,
     opus_int32 maxDataBytes
 ):
     Nan::AsyncWorker(callback),
     encoder(encoder),
     maxDataBytes(maxDataBytes),
-    pcm(pcm),
+    pcm(TypedArrayContents<opus_int16>::New(input)),
     frameSize(frameSize),
-    data(data)
+    data(TypedArrayContents<std::uint8_t>::New(data)),
+    result(OPUS_OK)
 {
-
+    SaveToPersistent("pcm", input);
+    SaveToPersistent("data", data);
 }
 
 void EncoderEncodeAsyncWorker::Execute() {
-    result = opus_encode(encoder, pcm, frameSize, data, maxDataBytes);
+    result = opus_encode(encoder, pcm.value, frameSize, data.value, maxDataBytes);
 }
 
 void EncoderEncodeAsyncWorker::HandleOKCallback() {

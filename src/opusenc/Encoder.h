@@ -2,14 +2,13 @@
 #define OPUSENC_ENCODER_H
 
 #include "Comments.h"
-
-#include <opusenc.h>
-#include <nan.h>
+#include "EncoderBase.h"
 
 namespace bindings::opusenc {
 
-class Encoder : public Nan::ObjectWrap {
+class Encoder final : public EncoderBase {
 public:
+    static constexpr const char* ClassName = "opusenc.Encoder";
     int error = OPE_OK;
     OggOpusEnc* value = nullptr;
     ~Encoder() override;

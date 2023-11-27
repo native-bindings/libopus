@@ -8,6 +8,7 @@ namespace bindings {
 
 class OpusFile : public Nan::ObjectWrap {
 public:
+    static constexpr const char* ClassName = "OpusFile";
     static Nan::Persistent<v8::Function> constructor;
     static void Init(v8::Local<v8::Object> exports);
 private:

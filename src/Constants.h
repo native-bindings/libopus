@@ -1,23 +1,28 @@
-#ifndef SRC_OPUSENC_CONSTANTS_H_
-#define SRC_OPUSENC_CONSTANTS_H_
+#ifndef NATIVE_BINDINGS_OPUS_CONSTANTS_H_
+#define NATIVE_BINDINGS_OPUS_CONSTANTS_H_
 
 #include <nan.h>
 
-namespace bindings {
-
-namespace opusenc {
-
-void SetEncoderGetterPrototypeMethods(v8::Local<v8::FunctionTemplate> tpl);
-bool ConvertOpusJavaScriptConstant(v8::Local<v8::Value> val, int& out);
-
-}
-
-}
-
-namespace Constants {
-
-void Init(v8::Local<v8::Object> exports);
-
-}
-
-#endif // SRC_OPUSENC_CONSTANTS_H_
+class Constants {
+public:
+    static void Init(v8::Local<v8::Object> exports);
+};
+class OpusApplicationConstants {
+public:
+    // Convert the original constant to a v8::Local<v8::Value>
+    static bool Encode(const std::int32_t& value, v8::Local<v8::Value>&);
+    static bool Convert(const v8::Local<v8::Value>&, std::int32_t& value);
+};
+class OpusBandwidthConstants {
+public:
+    // Convert the original constant to a v8::Local<v8::Value>
+    static bool Encode(const std::int32_t& value, v8::Local<v8::Value>&);
+    static bool Convert(const v8::Local<v8::Value>&, std::int32_t& value);
+};
+class OpusFramesizeConstants {
+public:
+    // Convert the original constant to a v8::Local<v8::Value>
+    static bool Encode(const std::int32_t& value, v8::Local<v8::Value>&);
+    static bool Convert(const v8::Local<v8::Value>&, std::int32_t& value);
+};
+#endif // NATIVE_BINDINGS_OPUS_CONSTANTS_H_

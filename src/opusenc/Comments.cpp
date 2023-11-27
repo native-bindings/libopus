@@ -1,6 +1,6 @@
 #include <stdexcept>
 
-#include "../Arguments.h"
+#include "core/Arguments.h"
 #include "Comments.h"
 
 using namespace bindings::opusenc;
@@ -29,10 +29,11 @@ NAN_METHOD(Comments::New) {
 NAN_METHOD(Comments::Add) {
     Comments* comments;
     std::string tag,value;
+    Arguments args(info, "add");
     if(
-        !Arguments::Unwrap<Comments>(info.This(), comments) ||
-        !Arguments::ConvertValue(info, 0, tag) ||
-        !Arguments::ConvertValue(info, 1,value)
+        !args.Unwrap(comments) ||
+        !args.Convert(0, tag) ||
+        !args.Convert(1,value)
     ){
         return;
     }
@@ -45,11 +46,12 @@ NAN_METHOD(Comments::AddPicture) {
     Comments* comments;
     int pictureType;
     std::string filename,description;
+    Arguments args(info, "addPicture");
     if(
-        !Arguments::Unwrap<Comments>(info.This(),comments) ||
-        !Arguments::ConvertValue(info, 0, filename) ||
-        !Arguments::ConvertValue(info, 1, pictureType) ||
-        !Arguments::ConvertValue(info, 2, description)
+        !args.Unwrap(comments) ||
+        !args.Convert(0, filename) ||
+        !args.Convert(1, pictureType) ||
+        !args.Convert(2, description)
     ) {
         return;
     }

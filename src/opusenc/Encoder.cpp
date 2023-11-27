@@ -1,5 +1,5 @@
 #include "Encoder.h"
-#include "../Arguments.h"
+#include "core/Arguments.h"
 #include "../Constants.h"
 
 using namespace bindings::opusenc;
@@ -45,7 +45,7 @@ void Encoder::Init(v8::Local<v8::Object> exports) {
     Nan::SetPrototypeMethod(tpl,"writeFloat",WriteFloat);
     Nan::SetPrototypeMethod(tpl,"continueNewFile",ContinueNewFile);
     Nan::SetPrototypeMethod(tpl,"deferredInitWithMapping",DeferredInitWithMapping);
-    SetEncoderGetterPrototypeMethods(tpl);
+    SetGettersAndSettersPrototypeMethods(tpl);
 
     constructor.Reset(Nan::GetFunction(tpl).ToLocalChecked());
 
@@ -61,20 +61,18 @@ NAN_METHOD(Encoder::New) {
 NAN_METHOD(Encoder::CreatePull){
     Encoder* enc;
     Comments* comments;
-    if(!AssertNotCreatedEncoder(enc)){
-        return;
-    }
     int rate,channels,family;
+    Arguments args(info, "createPull");
     if(
-        !Arguments::Unwrap<Encoder>(info.This(), enc) ||
-        !Arguments::Unwrap<Comments>(info[0], comments) ||
-        !Arguments::ConvertValue(info, 1, rate) ||
-        !Arguments::ConvertValue(info, 2, channels) ||
-        !Arguments::ConvertValue(info, 3, family)
+        !args.Unwrap(info.This(), enc) ||
+        !args.Unwrap(0, comments) ||
+        !args.Convert(1, rate) ||
+        !args.Convert(2, channels) ||
+        !args.Convert(3, family)
     ){
         return;
     }
-    if(!ValidateFamily(family)){
+    if(!AssertNotCreatedEncoder(enc) || !ValidateFamily(family)){
         return;
     }
     enc->value = ope_encoder_create_pull(comments->value, rate, channels, family, &enc->error);
@@ -85,21 +83,19 @@ NAN_METHOD(Encoder::CreatePull){
 
 NAN_METHOD(Encoder::CreateFile){
     Encoder* enc;
-    if(!Arguments::Unwrap<Encoder>(info.This(), enc)){
-        return;
-    }
-    if(!AssertNotCreatedEncoder(enc)){
+    Arguments args(info, "createFile");
+    if(!args.Unwrap(enc) || !AssertNotCreatedEncoder(enc)){
         return;
     }
     Comments* comments;
     std::string file;
     int rate,channels,family;
     if(
-        !Arguments::Unwrap<Comments>(info, 0, comments) ||
-        !Arguments::ConvertValue(info, 1, file) ||
-        !Arguments::ConvertValue(info, 2, rate) ||
-        !Arguments::ConvertValue(info, 3, channels) ||
-        !Arguments::ConvertValue(info, 4, family)
+        !args.Unwrap(0, comments) ||
+        !args.Convert(1, file) ||
+        !args.Convert(2, rate) ||
+        !args.Convert(3, channels) ||
+        !args.Convert(4, family)
     ){
         return;
     }
@@ -114,7 +110,8 @@ NAN_METHOD(Encoder::CreateFile){
 
 NAN_METHOD(Encoder::Drain){
     Encoder* enc;
-    if(!Arguments::Unwrap<Encoder>(info.This(), enc)){
+    Arguments args(info, "drain");
+    if(!args.Unwrap(enc)){
         return;
     }
     enc->error = ope_encoder_drain(enc->value);
@@ -126,9 +123,10 @@ NAN_METHOD(Encoder::Drain){
 NAN_METHOD(Encoder::ChainCurrent){
     Encoder* enc;
     Comments* comments;
+    Arguments args(info, "chainCurrent");
     if(
-        !Arguments::Unwrap<Encoder>(info.This(), enc) ||
-        !Arguments::Unwrap<Comments>(info[0], comments)
+        !args.Unwrap(enc) ||
+        !args.Unwrap(0, comments)
     ) {
         return;
     }
@@ -140,7 +138,8 @@ NAN_METHOD(Encoder::ChainCurrent){
 
 NAN_METHOD(Encoder::FlushHeader) {
     Encoder* enc;
-    if(!Arguments::Unwrap<Encoder>(info.This(), enc)){
+    Arguments args(info, "flushHeader");
+    if(!args.Unwrap(enc)){
         return;
     }
     enc->error = ope_encoder_flush_header(enc->value);
@@ -151,16 +150,17 @@ NAN_METHOD(Encoder::FlushHeader) {
 
 NAN_METHOD(Encoder::Write){
     Encoder* enc;
-    std::int16_t* pcm;
+    TypedArrayContents<std::int16_t> pcm;
     int samplesPerChannel;
+    Arguments args(info, "write");
     if(
-        !Arguments::Unwrap<Encoder>(info.This(), enc) ||
-        !Arguments::ConvertValue(info, 0,pcm) ||
-        !Arguments::ConvertValue(info, 1,samplesPerChannel)
+        !args.Unwrap(enc) ||
+        !args.ConvertTypedArrayContents(0, pcm) ||
+        !args.Convert(1, samplesPerChannel)
     ){
         return;
     }
-    enc->error = ope_encoder_write(enc->value, pcm, samplesPerChannel);
+    enc->error = ope_encoder_write(enc->value, pcm.value, samplesPerChannel);
     if(enc->HasError("Failed to write to encoder")){
         return;
     }
@@ -169,18 +169,18 @@ NAN_METHOD(Encoder::Write){
 NAN_METHOD(Encoder::DeferredInitWithMapping) {
     Encoder* enc;
     int family, streams,coupled_streams;
-    std::uint8_t* mapping;
+    TypedArrayContents<std::uint8_t> mapping;
+    Arguments args(info, "deferredInitWithMapping");
     if(
-        !Arguments::Unwrap<Encoder>(info.This(), enc) ||
-        !Arguments::ConvertValue(info, 0, family) ||
-        !Arguments::ConvertValue(info, 1, streams) ||
-        !Arguments::ConvertValue(info, 2, coupled_streams) ||
-        !Arguments::ConvertValue(info, 3, mapping)
+        !args.Unwrap(enc) ||
+        !args.Convert(0, family) ||
+        !args.Convert(1, streams) ||
+        !args.Convert(2, coupled_streams) ||
+        !args.ConvertTypedArrayContents(3, mapping)
     ){
-        Nan::ThrowError("First, second and third arguments must be valid integers");
         return;
     }
-    enc->error = ope_encoder_deferred_init_with_mapping(enc->value,family,streams,coupled_streams,mapping);
+    enc->error = ope_encoder_deferred_init_with_mapping(enc->value,family,streams,coupled_streams,mapping.value);
     if(enc->HasError("ope_encoder_deferred_init_with_mapping call failed")) {
         return;
     }
@@ -190,10 +190,11 @@ NAN_METHOD(Encoder::ContinueNewFile){
     Encoder* enc;
     Comments* comments;
     std::string path;
+    Arguments args(info, "continueNewFile");
     if(
-        !Arguments::Unwrap<Encoder>(info.This(), enc) ||
-        !Arguments::ConvertValue(info, 0,path) ||
-        !Arguments::Unwrap(info, 1,comments)
+        !args.Unwrap(enc) ||
+        !args.Convert(0, path) ||
+        !args.Unwrap(1, comments)
     ){
         return;
     }
@@ -208,10 +209,13 @@ NAN_METHOD(Encoder::GetPage) {
     bool flush;
     opus_int32 len;
     unsigned char* page;
-    if(!Arguments::Unwrap<Encoder>(info.This(), enc)) {
+    Arguments args(info, "getPage");
+
+    if(!args.Unwrap(enc)) {
         return;
     }
-    if(!Arguments::ConvertValue(info, 0,flush, false)){
+
+    if(!args.ConvertOptional(0, flush)){
         flush = false;
     }
 
@@ -228,16 +232,17 @@ NAN_METHOD(Encoder::GetPage) {
 
 NAN_METHOD(Encoder::WriteFloat){
     Encoder* enc;
-    float* pcm;
+    TypedArrayContents<float> pcm;
     int samplesPerChannel;
+    Arguments args(info, "writeFloat");
     if(
-        !Arguments::Unwrap<Encoder>(info.This(), enc) ||
-        !Arguments::ConvertValue(info, 0, pcm) ||
-        !Arguments::ConvertValue(info, 1, samplesPerChannel)
+        !args.Unwrap(enc) ||
+        !args.ConvertTypedArrayContents(0, pcm) ||
+        !args.Convert(1, samplesPerChannel)
     ) {
         return;
     }
-    enc->error = ope_encoder_write_float(enc->value, pcm, samplesPerChannel);
+    enc->error = ope_encoder_write_float(enc->value, pcm.value, samplesPerChannel);
     if(enc->HasError("Failed to write to encoder")){
         return;
     }

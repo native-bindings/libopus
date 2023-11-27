@@ -8,6 +8,7 @@ namespace bindings::opusenc {
 
 class Comments : public Nan::ObjectWrap {
 public:
+    static constexpr const char* ClassName = "opusenc.Comments";
     OggOpusComments* value = nullptr;
     static Nan::Persistent<v8::Function> constructor;
     static void Init(v8::Local<v8::Object>);

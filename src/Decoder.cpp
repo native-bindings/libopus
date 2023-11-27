@@ -1,5 +1,5 @@
 #include "Decoder.h"
-#include "Arguments.h"
+#include "core/Arguments.h"
 
 using namespace bindings;
 
@@ -15,29 +15,33 @@ void Decoder::Init(v8::Local<v8::Object> exports) {
     Nan::SetPrototypeMethod(tpl,"decode",Decode);
     Nan::SetPrototypeMethod(tpl,"decodeAsync",DecodeAsync);
     Nan::SetPrototypeMethod(tpl,"decodeFloat",DecodeFloat);
+
     constructor.Reset(Nan::GetFunction(tpl).ToLocalChecked());
+
     Nan::Set(exports,Nan::New("Decoder").ToLocalChecked(),Nan::GetFunction(tpl).ToLocalChecked());
 }
 
 NAN_METHOD(Decoder::Decode) {
     Decoder* dec;
-    unsigned char *data;
+    TypedArrayContents<opus_int16> pcm;
+    TypedArrayContents<unsigned char> data;
     opus_int32 len;
     int frameSize;
     int decodeFec;
-    opus_int16* pcm;
+    Arguments args(info, "decode");
+
     if(
-        !Arguments::Unwrap<Decoder>(info.This(), dec) ||
-        !Arguments::ConvertValue(info, 0, data) ||
-        !Arguments::ConvertValue(info, 1, len) ||
-        !Arguments::ConvertValue(info, 2, pcm) ||
-        !Arguments::ConvertValue(info, 3, frameSize) ||
-        !Arguments::ConvertValue(info, 4, decodeFec)
+            !args.Unwrap(dec) ||
+            !args.ConvertTypedArrayContents(0, data) ||
+            !args.Convert(1, len) ||
+            !args.ConvertTypedArrayContents(2, pcm) ||
+            !args.Convert(3, frameSize) ||
+        !args.Convert(4, decodeFec)
     ) {
         return;
     }
 
-    int samples = opus_decode(dec->value, data, len, pcm, frameSize, decodeFec);
+    int samples = opus_decode(dec->value, data.value, len, pcm.value, frameSize, decodeFec);
     if(samples < 0){
         Nan::ThrowError(Nan::New(
             "Failed to decode samples with error: " + std::string(opus_strerror(samples)
@@ -49,32 +53,32 @@ NAN_METHOD(Decoder::Decode) {
 
 NAN_METHOD(Decoder::DecodeAsync) {
     Decoder* dec;
-    unsigned char *data;
+    v8::Local<v8::Value> data, pcm;
     opus_int32 len;
     int frameSize;
     int decodeFec;
-    opus_int16* pcm;
     v8::Local<v8::Function> callback;
+    Arguments args(info, "decodeAsync");
     if(
-        !Arguments::Unwrap<Decoder>(info.This(), dec) ||
-        !Arguments::ConvertValue(info, 0, data) ||
-        !Arguments::ConvertValue(info, 1, len) ||
-        !Arguments::ConvertValue(info, 2, pcm) ||
-        !Arguments::ConvertValue(info, 3, frameSize) ||
-        !Arguments::ConvertValue(info, 4, decodeFec) ||
-        !Arguments::ConvertValue(info, 5, callback)
+        !args.Unwrap(dec) ||
+        // validate input data
+        !args.AssertArgumentType(0, Arguments::IsUint8Array, "Uint8Array") ||
+        !args.Convert(1, len) ||
+        // validate output data
+        !args.AssertArgumentType(2, Arguments::IsInt16Array, "Int16Array") ||
+        !args.Convert(3, frameSize) ||
+        !args.Convert(4, decodeFec) ||
+        !args.Convert(5, callback)
     ) {
         return;
     }
+    /**
+     * Get first and third argument V8 values
+     */
+    if(!args.GetArgument(0, data) || !args.GetArgument(2, pcm)) {
+        return;
+    }
 
-//    int samples = opus_decode(dec->value, data, len, pcm, frameSize, decodeFec);
-//    if(samples < 0){
-//        Nan::ThrowError(Nan::New(
-//            "Failed to decode samples with error: " + std::string(opus_strerror(samples)
-//        )).ToLocalChecked());
-//        return;
-//    }
-//    info.GetReturnValue().Set(Nan::New(samples));
     Nan::AsyncQueueWorker(new DecoderDecodeAsyncWorker(
         new Nan::Callback(callback),
         dec->value,
@@ -88,22 +92,23 @@ NAN_METHOD(Decoder::DecodeAsync) {
 
 NAN_METHOD(Decoder::DecodeFloat) {
     Decoder* dec;
-    std::uint8_t *data;
+    TypedArrayContents<std::uint8_t> inputData;
     opus_int32 len;
     int frameSize;
     int decodeFec;
-    float* pcm;
+    TypedArrayContents<float> pcm;
+    Arguments args(info, "decodeFloat");
     if(
-        !Arguments::Unwrap<Decoder>(info.This(), dec) ||
-        !Arguments::ConvertValue(info, 0, data) ||
-        !Arguments::ConvertValue(info, 1, len) ||
-        !Arguments::ConvertValue(info, 2, pcm) ||
-        !Arguments::ConvertValue(info, 3, frameSize) ||
-        !Arguments::ConvertValue(info, 4, decodeFec)
+            !args.Unwrap(dec) ||
+            !args.ConvertTypedArrayContents(0, inputData) ||
+            !args.Convert(1, len) ||
+            !args.ConvertTypedArrayContents(2, pcm) ||
+            !args.Convert(3, frameSize) ||
+        !args.Convert(4, decodeFec)
     ){
         return;
     }
-    int samples = opus_decode_float(dec->value,data,len,pcm,frameSize,decodeFec);
+    int samples = opus_decode_float(dec->value, inputData.value, len, pcm.value, frameSize, decodeFec);
     if(samples < 0){
         Nan::ThrowError(Nan::New("Failed to decode samples: " + std::string(opus_strerror(samples))).ToLocalChecked());
         return;
@@ -115,9 +120,10 @@ NAN_METHOD(Decoder::DecodeFloat) {
 NAN_METHOD(Decoder::New){
     opus_int32 sampleRate;
     int channels, error;
+    const Arguments args(info, "constructor");
     if(
-        !Arguments::ConvertValue(info, 0, sampleRate) ||
-        !Arguments::ConvertValue(info, 1, channels)
+        !args.Convert(0, sampleRate) ||
+        !args.Convert(1, channels)
     ) {
         return;
     }
@@ -125,38 +131,41 @@ NAN_METHOD(Decoder::New){
     if(error != OPUS_OK){
         Nan::ThrowError("Failed to create encoder");
         return;
-    };
-    auto dec = new Decoder(value, channels);
+    }
+    auto* dec = new Decoder(value);
     dec->Wrap(info.This());
     info.GetReturnValue().Set(info.This());
 
 }
 
-Decoder::Decoder(OpusDecoder* value, int channels): value(value), channels(channels) {
+Decoder::Decoder(OpusDecoder* value): DecoderBase(value) {
 }
 
 Decoder::~Decoder(){
     opus_decoder_destroy(value);
+    value = nullptr;
 }
 
 DecoderDecodeAsyncWorker::DecoderDecodeAsyncWorker(
-    Nan::Callback *callback, OpusDecoder *decoder, unsigned char *data,
-    opus_int32 len, opus_int16 *pcm, int frameSize, int decodeFec
+    Nan::Callback *callback, OpusDecoder *decoder, v8::Local<v8::Value>& data,
+    opus_int32 len, v8::Local<v8::Value>& pcm, int frameSize, int decodeFec
 ):
     Nan::AsyncWorker(callback),
     decoder(decoder),
-    data(data),
+    persistent({
+        data,
+        pcm
+    }),
     len(len),
-    pcm(pcm),
     frameSize(frameSize),
-    decodeFec(decodeFec)
+    decodeFec(decodeFec),
+    input(TypedArrayContents<unsigned char>::New(data)),
+    pcm(TypedArrayContents<opus_int16>::New(pcm))
 {
-
 }
 
 void DecoderDecodeAsyncWorker::Execute() {
-//    printf("len = %d, frame size = %d\n",len, frameSize);
-    result = opus_decode(decoder, data, len, pcm, frameSize, decodeFec);
+    result = opus_decode(decoder, input.value, len, pcm.value, frameSize, decodeFec);
 }
 
 void DecoderDecodeAsyncWorker::HandleOKCallback() {

@@ -1,5 +1,5 @@
 #include "OpusFile.h"
-#include "../Arguments.h"
+#include "core/Arguments.h"
 
 #include <opusfile.h>
 
@@ -9,7 +9,7 @@ Nan::Persistent<v8::Function> OpusFile::constructor;
 
 void OpusFile::Init(v8::Local<v8::Object> exports) {
     auto tpl = Nan::New<v8::FunctionTemplate>(New);
-    tpl->SetClassName(Nan::New("OpusFile").ToLocalChecked());
+    tpl->SetClassName(Nan::New(ClassName).ToLocalChecked());
     tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
     Nan::SetPrototypeMethod(tpl, "openFile", OpenFile);
@@ -33,11 +33,12 @@ void OpusFile::Init(v8::Local<v8::Object> exports) {
 
 NAN_METHOD(OpusFile::OpenFile) {
     OpusFile* file;
-    if(!Arguments::Unwrap(info.This(), file, "OpusFile")) {
+    const Arguments args(info, "openFile");
+    if(!args.Unwrap(file)) {
         return;
     }
     std::string filePath;
-    if(!Arguments::ConvertValue(info, 0, filePath)) {
+    if(!args.Convert(0, filePath)) {
         return;
     }
     int err;
@@ -52,16 +53,16 @@ NAN_METHOD(OpusFile::OpenFile) {
 
 NAN_METHOD(OpusFile::OpenMemory) {
     OpusFile* file;
-    if(!Arguments::Unwrap(info.This(), file, "OpusFile")) {
+    const Arguments args(info, "openMemory");
+    if(!args.Unwrap(file)) {
         return;
     }
-    std::uint8_t* data;
-    size_t size;
-    if(!Arguments::ConvertValue(info, 0, data, size)) {
+    TypedArrayContents<std::uint8_t> data;
+    if(!args.ConvertTypedArrayContents(0, data)) {
         return;
     }
     int err;
-    auto opusFile = op_open_memory(data, size, &err);
+    const auto opusFile = op_open_memory(data.value, data.size, &err);
     if(err != 0 || opusFile == nullptr){
         Nan::ThrowError("Failed to open file");
         return;
@@ -72,18 +73,22 @@ NAN_METHOD(OpusFile::OpenMemory) {
 
 NAN_METHOD(OpusFile::Read) {
     OpusFile* file;
-    if(!Arguments::Unwrap(info.This(), file, "OpusFile")) {
-        return;
-    }
-    std::int16_t *pcm;
-    size_t bufSize;
-    if(!Arguments::ConvertValue(info, 0, pcm, bufSize)) {
-        return;
-    }
+    const Arguments args(info, "read");
     int li;
-    auto samples = op_read(file->value, pcm, bufSize, &li);
+    int bufSize;
+    TypedArrayContents<std::int16_t> pcm;
+    if(!args.Unwrap(file)) {
+        return;
+    }
+    if(!args.ConvertTypedArrayContents(0, pcm)) {
+        return;
+    }
+    if(!Arguments::SafeCast(pcm.size, bufSize, "Sample count")) {
+        return;
+    }
+    auto samples = op_read(file->value, pcm.value, bufSize, &li);
     if(samples < 0) {
-        Nan::ThrowError("Failed to read int16 pcm");
+        Nan::ThrowError("Failed to read pcm in signed 16-bit format");
         return;
     }
     auto result = Nan::New<v8::Object>();
@@ -94,16 +99,16 @@ NAN_METHOD(OpusFile::Read) {
 
 NAN_METHOD(OpusFile::ReadFloat) {
     OpusFile* file;
-    if(!Arguments::Unwrap(info.This(), file, "OpusFile")) {
+    const Arguments args(info, "readFloat");
+    TypedArrayContents<std::float_t> pcm;
+    int li, bufSize;
+    if(!args.Unwrap(file) || !args.ConvertTypedArrayContents(0, pcm)) {
         return;
     }
-    float *pcm;
-    size_t bufSize;
-    if(!Arguments::ConvertValue(info, 0, pcm, bufSize)) {
+    if(!Arguments::SafeCast(pcm.size, bufSize, "Sample count")) {
         return;
     }
-    int li;
-    auto samples = op_read_float(file->value, pcm, bufSize, &li);
+    const int samples = op_read_float(file->value, pcm.value, bufSize, &li);
     if(samples < 0) {
         Nan::ThrowError("Failed to read float pcm");
         return;
@@ -116,15 +121,19 @@ NAN_METHOD(OpusFile::ReadFloat) {
 
 NAN_METHOD(OpusFile::ReadFloatStereo) {
     OpusFile* file;
-    if(!Arguments::Unwrap(info.This(), file, "OpusFile")) {
+    TypedArrayContents<std::float_t> pcm;
+    int bufSize;
+    const Arguments args(info, "readFloatStereo");
+    if(!args.Unwrap(file)) {
         return;
     }
-    float *pcm;
-    size_t bufSize;
-    if(!Arguments::ConvertValue(info, 0, pcm, bufSize)) {
+    if(!args.ConvertTypedArrayContents(0, pcm)) {
         return;
     }
-    auto samples = op_read_float_stereo(file->value, pcm, bufSize);
+    if(!Arguments::SafeCast(pcm.size, bufSize, "Sample count")) {
+        return;
+    }
+    auto samples = op_read_float_stereo(file->value, pcm.value, bufSize);
     if(samples < 0) {
         Nan::ThrowError("Failed to read stereo float pcm");
         return;
@@ -134,11 +143,12 @@ NAN_METHOD(OpusFile::ReadFloatStereo) {
 
 NAN_METHOD(OpusFile::ChannelCount) {
     OpusFile* file;
-    if(!Arguments::Unwrap(info.This(), file, "OpusFile")) {
+    const Arguments args(info, "channelCount");
+    if(!args.Unwrap(file)) {
         return;
     }
     int li;
-    if(!Arguments::ConvertValue(info, 0, li)) {
+    if(!args.Convert(0, li)) {
         return;
     }
     info.GetReturnValue().Set(Nan::New(op_channel_count(file->value, li)));
@@ -146,7 +156,8 @@ NAN_METHOD(OpusFile::ChannelCount) {
 
 NAN_METHOD(OpusFile::LinkCount) {
     OpusFile* file;
-    if(!Arguments::Unwrap(info.This(), file, "OpusFile")) {
+    const Arguments args(info, "linkCount");
+    if(!args.Unwrap(file)) {
         return;
     }
     info.GetReturnValue().Set(Nan::New(op_link_count(file->value)));
@@ -154,7 +165,8 @@ NAN_METHOD(OpusFile::LinkCount) {
 
 NAN_METHOD(OpusFile::CurrentLink) {
     OpusFile* file;
-    if(!Arguments::Unwrap(info.This(), file, "OpusFile")) {
+    const Arguments args(info, "currentLink");
+    if(!args.Unwrap(file)) {
         return;
     }
     info.GetReturnValue().Set(Nan::New(op_current_link(file->value)));
@@ -162,27 +174,33 @@ NAN_METHOD(OpusFile::CurrentLink) {
 
 NAN_METHOD(OpusFile::RawTotal) {
     OpusFile* file;
-    if(!Arguments::Unwrap(info.This(), file, "OpusFile")) {
+    const Arguments args(info, "rawTotal");
+    if(!args.Unwrap(file)) {
         return;
     }
     int li;
-    if(!Arguments::ConvertValue(info, 0, li)) {
+    if(!args.Convert(0, li)) {
         return;
     }
-    info.GetReturnValue().Set(Nan::New<v8::Number>(op_raw_total(file->value, li)));
+    v8::Local<v8::Value> result;
+    if(!Arguments::Get(op_raw_total(file->value, li), result)) {
+        return;
+    }
+    info.GetReturnValue().Set(result);
 }
 
 NAN_METHOD(OpusFile::ReadStereo) {
     OpusFile* file;
-    if(!Arguments::Unwrap(info.This(), file, "OpusFile")) {
+    const Arguments args(info, "readStereo");
+    if(!args.Unwrap(file)) {
         return;
     }
-    opus_int16 *pcm;
-    size_t bufSize;
-    if(!Arguments::ConvertValue(info, 0, pcm, bufSize)) {
+    TypedArrayContents<opus_int16> pcm;
+    int bufSize;
+    if(!args.ConvertTypedArrayContents(0, pcm) || !Arguments::SafeCast(pcm.size, bufSize, "Sample count")) {
         return;
     }
-    auto samples = op_read_stereo(file->value, pcm, bufSize);
+    const auto samples = op_read_stereo(file->value, pcm.value, bufSize);
     if(samples < 0) {
         Nan::ThrowError("Failed to read stereo pcm in signed 16-bit format");
         return;
@@ -192,24 +210,30 @@ NAN_METHOD(OpusFile::ReadStereo) {
 
 NAN_METHOD(OpusFile::PcmTell) {
     OpusFile* file;
-    if(!Arguments::Unwrap(info.This(), file, "OpusFile")) {
+    const Arguments args(info, "pcmTell");
+    if(!args.Unwrap(file)) {
         return;
     }
-    auto result = op_pcm_tell(file->value);
-    if(result < 0) {
+    const ogg_int64_t offset = op_pcm_tell(file->value);
+    if(offset < 0) {
         Nan::ThrowError("op_pcm_tell returned a failure");
         return;
     }
-    info.GetReturnValue().Set(Nan::New<v8::Number>(result));
+    v8::Local<v8::Value> result;
+    if(!Arguments::Get(offset, result)) {
+        return;
+    }
+    info.GetReturnValue().Set(result);
 }
 
 NAN_METHOD(OpusFile::PcmSeek) {
     OpusFile* file;
-    if(!Arguments::Unwrap(info.This(), file, "OpusFile")) {
+    const Arguments args(info, "pcmSeek");
+    if(!args.Unwrap(file)) {
         return;
     }
     opus_int64 offset;
-    if(!Arguments::ConvertValue(info, 0, offset)) {
+    if(!args.Convert(0, offset)) {
         return;
     }
     auto result = op_pcm_seek(file->value, offset);
@@ -221,11 +245,12 @@ NAN_METHOD(OpusFile::PcmSeek) {
 
 NAN_METHOD(OpusFile::PcmTotal) {
     OpusFile* file;
-    if(!Arguments::Unwrap(info.This(), file, "OpusFile")) {
+    const Arguments args(info, "pcmTotal");
+    if(!args.Unwrap(file)) {
         return;
     }
     int li;
-    if(!Arguments::ConvertValue(info, 0, li)) {
+    if(!args.Convert(0, li)) {
         return;
     }
     auto result = op_pcm_total(file->value, li);
@@ -233,7 +258,11 @@ NAN_METHOD(OpusFile::PcmTotal) {
         Nan::ThrowError("op_pcm_total returned a failure");
         return;
     }
-    info.GetReturnValue().Set(Nan::New<v8::Number>(result));
+    v8::Local<v8::Value> value;
+    if(!Arguments::Get(result, value)) {
+        return;
+    }
+    info.GetReturnValue().Set(value);
 }
 
 NAN_METHOD(OpusFile::New) {
