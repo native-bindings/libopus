@@ -9,13 +9,14 @@
         "constants.d.ts",
         "index.js",
         "scripts/**/*.{js,d.ts,map,ts}",
+        "core/**/*.{js,d.ts,map,ts}",
         "CMakeLists.txt",
         "src/**/*.{mk,am,ac,cc,c,cpp,in,h,hpp,txt,cmake}",
         "third-party/**/*.{mk,am,ac,cc,c,cpp,in,h,hpp,txt,cmake}"
     ],
     "scripts": {
         "test": "npx ava test/index.js",
-        "build": "npx tsc -b scripts",
+        "build": "npx tsc -b core scripts --force",
         "prepublishOnly": "npm run build && node scripts --generate-constants && npm run postinstall && npm test",
         "postinstall": "node scripts --configure"
     },
